@@ -15,8 +15,8 @@ export const defaultTemplates: WorkoutTemplate[] = [
     exercises: [
       {
         id: "m1",
-        exerciseId: "db-press-15",
-        exercise: getExercise("db-press-15"),
+        exerciseId: "DB Press, 15 grader",
+        exercise: getExercise("DB Press, 15 grader"),
         sets: 3,
         reps: "6-8",
         restSeconds: 180,
