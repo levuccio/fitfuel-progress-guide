@@ -99,8 +99,33 @@ export default function WorkoutsPage() {
       0
     );
     const workingTime = template.exercises.length * 3 * 60; // ~3 min per exercise
-    const totalMinutes = Math.round((totalRestSeconds + workingTime) / 60);
-    return totalMinutes;
+    let totalMinutes = Math.round((totalRestSeconds + workingTime) / 60);
+
+    if (totalMinutes === 0) {
+      return "0 min";
+    }
+
+    // Round up to the next hour if close (e.g., 57-59 min becomes 1h)
+    if (totalMinutes < 60) {
+      if (totalMinutes >= 57) {
+        return "1h";
+      }
+      return `${totalMinutes} min`;
+    }
+
+    let hours = Math.floor(totalMinutes / 60);
+    let remainingMinutes = totalMinutes % 60;
+
+    if (remainingMinutes >= 57) { // If remaining minutes are 57 or more, round up to next hour
+      hours++;
+      remainingMinutes = 0;
+    }
+
+    if (remainingMinutes === 0) {
+      return `${hours}h`;
+    } else {
+      return `${hours}h ${remainingMinutes}m`;
+    }
   };
 
   // Handle drag end for reordering
@@ -207,7 +232,7 @@ export default function WorkoutsPage() {
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Clock className="h-4 w-4" />
-                            <span>~{getEstimatedTime(template)} min</span>
+                            <span>~{getEstimatedTime(template)}</span>
                           </div>
                         </div>
                         <Button
@@ -229,7 +254,7 @@ export default function WorkoutsPage() {
         </Droppable>
       </DragDropContext>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6"> {/* Changed grid-cols-2 to sm:grid-cols-4 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
         <StatCircle
           value={sessionsThisWeek}
           label="Workouts this week"
