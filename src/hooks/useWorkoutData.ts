@@ -84,29 +84,27 @@ export function useWorkoutData() {
   }, [sessions]);
 
   const getExerciseHistoryData = useCallback((exerciseId: string) => {
-    const historyMap: { [date: string]: number } = {}; // date (YYYY-MM-DD) -> maxWeight for that day
+    const historyData: { date: string; maxWeight: number }[] = [];
 
     sessions.filter(s => s.status === "completed").forEach(session => {
-      const sessionDate = format(new Date(session.startTime), "yyyy-MM-dd");
       const exerciseLog = session.exercises.find(ex => ex.exerciseId === exerciseId);
 
       if (exerciseLog) {
-        const maxWeightInSession = Math.max(
-          ...exerciseLog.sets.filter(set => set.completed).map(set => set.weight),
-          0
-        );
-
-        if (maxWeightInSession > 0) {
-          if (!historyMap[sessionDate] || maxWeightInSession > historyMap[sessionDate]) {
-            historyMap[sessionDate] = maxWeightInSession;
+        const completedSets = exerciseLog.sets.filter(set => set.completed);
+        if (completedSets.length > 0) {
+          const maxWeightInSession = Math.max(...completedSets.map(set => set.weight));
+          if (maxWeightInSession > 0) {
+            historyData.push({
+              date: session.startTime, // Use session.startTime for unique data points
+              maxWeight: maxWeightInSession,
+            });
           }
         }
       }
     });
 
-    return Object.entries(historyMap)
-      .map(([date, maxWeight]) => ({ date, maxWeight }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Sort by start time to ensure chronological order
+    return historyData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [sessions]);
 
   const startSession = useCallback((template: WorkoutTemplate): WorkoutSession => {
