@@ -1,158 +1,139 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { WorkoutTemplate, TemplateExercise } from "@/types/workout";
 import { useToast } from "@/hooks/use-toast";
 
+const REP_PRESETS = ["6-8", "8-10", "6-10", "8-12", "10-12", "12-15", "15-20", "AMRAP"];
+
+function normalizeRepsInput(val: string) {
+  return val.trim().replace(/–/g, "-").replace(/\s*to\s*/gi, "-");
+}
+
 export default function TemplateBuilderPage() {
-  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addTemplate } = useWorkoutData();
   const { toast } = useToast();
-  const { templates, allExercises, addTemplate, updateTemplate } = useWorkoutData();
 
-  const existingTemplate = id ? templates.find(t => t.id === id) : null;
-  
-  const [name, setName] = useState(existingTemplate?.name || "");
-  const [dayOfWeek, setDayOfWeek] = useState(existingTemplate?.dayOfWeek || "");
-  const [exercises, setExercises] = useState<TemplateExercise[]>(existingTemplate?.exercises || []);
+  const [name, setName] = useState("");
+  const [exercises, setExercises] = useState<TemplateExercise[]>([]);
 
-  const addExercise = (exerciseId: string) => {
-    const exercise = allExercises.find(e => e.id === exerciseId);
-    if (!exercise) return;
-    
-    const newExercise: TemplateExercise = {
-      id: crypto.randomUUID(),
-      exerciseId,
-      exercise,
-      sets: 3,
-      reps: "10",
-      restSeconds: 120,
-      order: exercises.length + 1,
-    };
-    setExercises([...exercises, newExercise]);
+  const addExercise = () => {
+    setExercises(prev => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: "",
+        sets: 3,
+        repRange: "8-10",
+        restSeconds: 180,
+      },
+    ]);
   };
 
-  const updateExercise = (id: string, updates: Partial<TemplateExercise>) => {
-    setExercises(exercises.map(e => e.id === id ? { ...e, ...updates } : e));
+  const updateExercise = (id: string, field: keyof TemplateExercise, value: any) => {
+    setExercises(prev => prev.map(ex => (ex.id === id ? { ...ex, [field]: value } : ex)));
   };
 
   const removeExercise = (id: string) => {
-    setExercises(exercises.filter(e => e.id !== id));
+    setExercises(prev => prev.filter(ex => ex.id !== id));
   };
 
   const handleSave = () => {
     if (!name.trim()) {
-      toast({ title: "Error", description: "Please enter a template name", variant: "destructive" });
+      toast({ title: "Template name required" });
       return;
     }
-    if (exercises.length === 0) {
-      toast({ title: "Error", description: "Add at least one exercise", variant: "destructive" });
-      return;
-    }
-
     const template: WorkoutTemplate = {
-      id: existingTemplate?.id || crypto.randomUUID(),
-      name: name.trim(),
-      dayOfWeek: dayOfWeek || undefined,
+      id: crypto.randomUUID(),
+      name,
       exercises,
-      isCustom: true,
-      createdAt: existingTemplate?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
-
-    if (existingTemplate) {
-      updateTemplate(template);
-      toast({ title: "Template updated" });
-    } else {
-      addTemplate(template);
-      toast({ title: "Template created" });
-    }
-    navigate("/");
+    addTemplate(template);
+    toast({ title: "Template created!" });
+    navigate("/workouts");
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold">{existingTemplate ? "Edit Template" : "New Template"}</h1>
+      <h1 className="text-2xl font-bold">New Template</h1>
+
+      <div>
+        <Label>Template name</Label>
+        <Input
+          placeholder="e.g., Push Day"
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
       </div>
 
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>Template Name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Push Day" />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Day (optional)</Label>
-          <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-            <SelectTrigger><SelectValue placeholder="Select day" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No specific day</SelectItem>
-              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Weekend"].map(d => (
-                <SelectItem key={d} value={d}>{d}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <Label>Exercises</Label>
         {exercises.map((ex, idx) => (
-          <Card key={ex.id} className="glass-card">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <GripVertical className="h-5 w-5 text-muted-foreground mt-2" />
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{ex.exercise.name}</span>
-                    <Button variant="ghost" size="icon" onClick={() => removeExercise(ex.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <Label className="text-xs">Sets</Label>
-                      <Input type="number" value={ex.sets} onChange={(e) => updateExercise(ex.id, { sets: parseInt(e.target.value) || 1 })} />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Reps</Label>
-                      <Input value={ex.reps} onChange={(e) => updateExercise(ex.id, { reps: e.target.value })} placeholder="8-12" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Rest (s)</Label>
-                      <Input type="number" value={ex.restSeconds} onChange={(e) => updateExercise(ex.id, { restSeconds: parseInt(e.target.value) || 60 })} />
-                    </div>
-                  </div>
-                </div>
+          <Card key={ex.id}>
+            <CardContent className="space-y-2 pt-4">
+              <div className="flex items-center justify-between">
+                <Label>Exercise {idx + 1}</Label>
+                <Button variant="ghost" size="icon" onClick={() => removeExercise(ex.id)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
+
+              <Input
+                placeholder="Exercise name (type anything)"
+                value={ex.name}
+                onChange={e => updateExercise(ex.id, "name", e.target.value)}
+              />
+
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Sets"
+                  type="number"
+                  min={1}
+                  value={ex.sets}
+                  onChange={e => updateExercise(ex.id, "sets", Number(e.target.value))}
+                />
+
+                <Select
+                  onValueChange={v => updateExercise(ex.id, "repRange", normalizeRepsInput(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={ex.repRange} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REP_PRESETS.map(preset => (
+                      <SelectItem key={preset} value={preset}>
+                        {preset}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Input
+                placeholder="Rest (sec)"
+                type="number"
+                min={30}
+                value={ex.restSeconds}
+                onChange={e => updateExercise(ex.id, "restSeconds", Number(e.target.value))}
+              />
             </CardContent>
           </Card>
         ))}
-
-        <Select onValueChange={addExercise}>
-          <SelectTrigger className="border-dashed">
-            <Plus className="h-4 w-4 mr-2" />
-            <span>Add Exercise</span>
-          </SelectTrigger>
-          <SelectContent>
-            {allExercises.map(ex => (
-              <SelectItem key={ex.id} value={ex.id}>{ex.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
-      <Button onClick={handleSave} className="w-full">Save Template</Button>
+      <Button onClick={addExercise} className="w-full" variant="outline">
+        <Plus className="w-4 h-4 mr-1" /> Add Exercise
+      </Button>
+
+      <Button onClick={handleSave} className="w-full">
+        Save Template
+      </Button>
     </div>
   );
 }
