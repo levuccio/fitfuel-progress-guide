@@ -2,14 +2,15 @@ import { useLocalStorage } from "./useLocalStorage";
 import { WorkoutTemplate, WorkoutSession, Exercise } from "@/types/workout";
 import { defaultTemplates } from "@/data/templates";
 import { defaultExercises } from "@/data/exercises";
-import { defaultRecipes } from "@/data/recipes"; // Import default recipes
+import { defaultRecipes } from "@/data/recipes";
 import { useCallback } from "react";
+import { format } from "date-fns";
 
 const TEMPLATES_KEY = "fittrack_templates";
 const SESSIONS_KEY = "fittrack_sessions";
 const EXERCISES_KEY = "fittrack_exercises";
 const ACTIVE_SESSION_KEY = "fittrack_active_session";
-const RECIPES_KEY = "fittrack_recipes"; // Key for recipes
+const RECIPES_KEY = "fittrack_recipes";
 
 export function useWorkoutData() {
   const [templates, setTemplates] = useLocalStorage<WorkoutTemplate[]>(
@@ -32,7 +33,6 @@ export function useWorkoutData() {
     null
   );
 
-  // Use useLocalStorage for recipes as well, to allow resetting
   const [, setRecipes] = useLocalStorage(RECIPES_KEY, defaultRecipes);
 
   const allExercises = [...defaultExercises, ...customExercises];
@@ -81,6 +81,32 @@ export function useWorkoutData() {
     });
     
     return data;
+  }, [sessions]);
+
+  const getExerciseHistoryData = useCallback((exerciseId: string) => {
+    const historyMap: { [date: string]: number } = {}; // date (YYYY-MM-DD) -> maxWeight for that day
+
+    sessions.filter(s => s.status === "completed").forEach(session => {
+      const sessionDate = format(new Date(session.startTime), "yyyy-MM-dd");
+      const exerciseLog = session.exercises.find(ex => ex.exerciseId === exerciseId);
+
+      if (exerciseLog) {
+        const maxWeightInSession = Math.max(
+          ...exerciseLog.sets.filter(set => set.completed).map(set => set.weight),
+          0
+        );
+
+        if (maxWeightInSession > 0) {
+          if (!historyMap[sessionDate] || maxWeightInSession > historyMap[sessionDate]) {
+            historyMap[sessionDate] = maxWeightInSession;
+          }
+        }
+      }
+    });
+
+    return Object.entries(historyMap)
+      .map(([date, maxWeight]) => ({ date, maxWeight }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [sessions]);
 
   const startSession = useCallback((template: WorkoutTemplate): WorkoutSession => {
@@ -186,5 +212,6 @@ export function useWorkoutData() {
     updateTemplateOrder,
     getTemplateById,
     restoreFactorySettings,
+    getExerciseHistoryData,
   };
 }

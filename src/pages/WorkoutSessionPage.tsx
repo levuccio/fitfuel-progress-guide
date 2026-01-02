@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Pause, Play, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { SetRow } from "@/components/workout/SetRow";
 import { RestTimer } from "@/components/workout/RestTimer";
+import { ExerciseProgressChart } from "@/components/workout/ExerciseProgressChart"; // Import the new component
 import { ExerciseLog, SetLog } from "@/types/workout";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -125,6 +126,9 @@ export default function WorkoutSessionPage() {
               </CardHeader>
               {isExpanded && (
                 <CardContent className="p-4 pt-0 space-y-2">
+                  {/* Exercise Progress Chart */}
+                  <ExerciseProgressChart exerciseId={exercise.exerciseId} />
+
                   {lastData && (
                     <p className="text-xs text-muted-foreground mb-2">
                       Last: {lastData.sets.map(s => `${s.weight}kg×${s.reps}`).join(", ")}
