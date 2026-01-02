@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity } from "lucide-react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,12 +23,27 @@ import {
 import { PausedSessionBanner } from "@/components/workout/PausedSessionBanner";
 import { WorkoutTemplate } from "@/types/workout";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+import { StatCircle } from "@/components/StatCircle"; // Import the new component
+import { isThisWeek, isAfter, startOfWeek, endOfWeek } from "date-fns";
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
-  const { templates, activeSession, deleteTemplate, resumeSession, discardSession, updateTemplateOrder } = useWorkoutData();
+  const { templates, activeSession, deleteTemplate, resumeSession, discardSession, updateTemplateOrder, sessions } = useWorkoutData();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<WorkoutTemplate | null>(null);
+
+  const completedSessions = sessions.filter(s => s.status === "completed");
+
+  const sessionsThisWeek = completedSessions.filter(session => {
+    const sessionDate = new Date(session.startTime);
+    const now = new Date();
+    // Use startOfWeek and endOfWeek to define the current week interval
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday as start of week
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday as end of week
+    return isAfter(sessionDate, weekStart) && isAfter(weekEnd, sessionDate);
+  }).length;
+
+  const totalSessions = completedSessions.length;
 
   const handleStartWorkout = (templateId: string) => {
     navigate(`/workout/${templateId}`);
@@ -97,6 +112,21 @@ export default function WorkoutsPage() {
           onDiscard={discardSession}
         />
       )}
+
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <StatCircle
+          value={sessionsThisWeek}
+          label="Workouts this week"
+          icon={CalendarDays}
+          colorClass="bg-blue-500/10 text-blue-500"
+        />
+        <StatCircle
+          value={totalSessions}
+          label="Total workouts"
+          icon={Activity}
+          colorClass="bg-purple-500/10 text-purple-500"
+        />
+      </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="templates">
