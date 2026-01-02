@@ -55,21 +55,30 @@ export function useWorkoutData() {
       templateName: template.name,
       startTime: new Date().toISOString(),
       status: "in_progress",
-      exercises: template.exercises.map(te => ({
-        id: crypto.randomUUID(),
-        exerciseId: te.exerciseId,
-        exercise: te.exercise,
-        targetSets: te.sets,
-        targetReps: te.reps,
-        restSeconds: te.restSeconds,
-        sets: Array.from({ length: te.sets }, (_, i) => ({
-          id: crypto.randomUUID(),
-          setNumber: i + 1,
-          reps: 0,
-          weight: 0,
-          completed: false,
-        })),
-      })),
+      exercises: template.exercises.map(te => {
+  const exercise = allExercises.find(e => e.id === te.exerciseId);
+
+  if (!exercise) {
+    throw new Error(`Exercise not found: ${te.exerciseId}`);
+  }
+
+  return {
+    id: crypto.randomUUID(),
+    exerciseId: te.exerciseId,
+    exercise,
+    targetSets: te.sets,
+    targetReps: te.reps,
+    restSeconds: te.restSeconds,
+    sets: Array.from({ length: te.sets }, (_, i) => ({
+      id: crypto.randomUUID(),
+      setNumber: i + 1,
+      reps: 0,
+      weight: 0,
+      completed: false,
+    })),
+  };
+}),
+
     };
     setActiveSession(session);
     return session;
