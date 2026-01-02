@@ -2,12 +2,14 @@ import { useLocalStorage } from "./useLocalStorage";
 import { WorkoutTemplate, WorkoutSession, Exercise } from "@/types/workout";
 import { defaultTemplates } from "@/data/templates";
 import { defaultExercises } from "@/data/exercises";
+import { defaultRecipes } from "@/data/recipes"; // Import default recipes
 import { useCallback } from "react";
 
 const TEMPLATES_KEY = "fittrack_templates";
 const SESSIONS_KEY = "fittrack_sessions";
 const EXERCISES_KEY = "fittrack_exercises";
 const ACTIVE_SESSION_KEY = "fittrack_active_session";
+const RECIPES_KEY = "fittrack_recipes"; // Key for recipes
 
 export function useWorkoutData() {
   const [templates, setTemplates] = useLocalStorage<WorkoutTemplate[]>(
@@ -29,6 +31,9 @@ export function useWorkoutData() {
     ACTIVE_SESSION_KEY,
     null
   );
+
+  // Use useLocalStorage for recipes as well, to allow resetting
+  const [, setRecipes] = useLocalStorage(RECIPES_KEY, defaultRecipes);
 
   const allExercises = [...defaultExercises, ...customExercises];
 
@@ -94,6 +99,8 @@ export function useWorkoutData() {
           throw new Error(`Exercise not found: ${te.exerciseId}`);
         }
 
+        const lastExerciseData = lastData?.[te.exerciseId];
+
         return {
           id: crypto.randomUUID(),
           exerciseId: te.exerciseId,
@@ -104,8 +111,8 @@ export function useWorkoutData() {
           sets: Array.from({ length: te.sets }, (_, i) => ({
             id: crypto.randomUUID(),
             setNumber: i + 1,
-            reps: lastData?.[te.exerciseId]?.sets[i]?.reps || 0,
-            weight: lastData?.[te.exerciseId]?.sets[i]?.weight || 0,
+            reps: lastExerciseData?.sets[i]?.reps || 0,
+            weight: lastExerciseData?.sets[i]?.weight || 0,
             completed: false,
           })),
         };
@@ -151,6 +158,14 @@ export function useWorkoutData() {
     setActiveSession({ ...activeSession, status: "in_progress" });
   }, [activeSession, setActiveSession]);
 
+  const restoreFactorySettings = useCallback(() => {
+    setTemplates(defaultTemplates);
+    setSessions([]);
+    setCustomExercises([]);
+    setRecipes(defaultRecipes);
+    setActiveSession(null);
+  }, [setTemplates, setSessions, setCustomExercises, setRecipes, setActiveSession]);
+
   return {
     templates,
     sessions,
@@ -170,5 +185,6 @@ export function useWorkoutData() {
     getLastSessionData,
     updateTemplateOrder,
     getTemplateById,
+    restoreFactorySettings,
   };
 }
