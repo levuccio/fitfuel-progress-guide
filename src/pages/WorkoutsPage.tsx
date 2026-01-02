@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity } from "lucide-react";
+import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer } from "lucide-react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,16 +34,43 @@ export default function WorkoutsPage() {
 
   const completedSessions = sessions.filter(s => s.status === "completed");
 
+  const formatDurationShort = (totalSeconds: number) => {
+    if (totalSeconds < 60) return `${totalSeconds}s`;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  };
+
   const sessionsThisWeek = completedSessions.filter(session => {
     const sessionDate = new Date(session.startTime);
     const now = new Date();
-    // Use startOfWeek and endOfWeek to define the current week interval
     const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday as start of week
     const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday as end of week
     return isAfter(sessionDate, weekStart) && isAfter(weekEnd, sessionDate);
   }).length;
 
   const totalSessions = completedSessions.length;
+
+  const totalWorkoutTimeThisWeekSeconds = completedSessions
+    .filter(session => {
+      const sessionDate = new Date(session.startTime);
+      const now = new Date();
+      const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+      return isAfter(sessionDate, weekStart) && isAfter(weekEnd, sessionDate);
+    })
+    .reduce((acc, session) => acc + (session.totalDuration || 0), 0);
+  const totalWorkoutTimeThisWeek = formatDurationShort(totalWorkoutTimeThisWeekSeconds);
+
+  const totalWorkoutTimeOverallSeconds = completedSessions.reduce(
+    (acc, session) => acc + (session.totalDuration || 0),
+    0
+  );
+  const totalWorkoutTimeOverall = formatDurationShort(totalWorkoutTimeOverallSeconds);
+
 
   const handleStartWorkout = (templateId: string) => {
     navigate(`/workout/${templateId}`);
@@ -202,7 +229,7 @@ export default function WorkoutsPage() {
         </Droppable>
       </DragDropContext>
 
-      <div className="grid grid-cols-2 gap-4 mt-6"> {/* Moved here */}
+      <div className="grid grid-cols-2 gap-4 mt-6">
         <StatCircle
           value={sessionsThisWeek}
           label="Workouts this week"
@@ -214,6 +241,18 @@ export default function WorkoutsPage() {
           label="Total workouts"
           icon={Activity}
           colorClass="bg-purple-500/10 text-purple-500"
+        />
+        <StatCircle
+          value={totalWorkoutTimeThisWeek}
+          label="Time this week"
+          icon={Timer}
+          colorClass="bg-green-500/10 text-green-500"
+        />
+        <StatCircle
+          value={totalWorkoutTimeOverall}
+          label="Total time"
+          icon={Clock}
+          colorClass="bg-orange-500/10 text-orange-500"
         />
       </div>
 
