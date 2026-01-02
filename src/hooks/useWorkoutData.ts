@@ -44,6 +44,10 @@ export function useWorkoutData() {
     setTemplates(prev => prev.filter(t => t.id !== templateId));
   }, [setTemplates]);
 
+  const updateTemplateOrder = useCallback((newOrder: WorkoutTemplate[]) => {
+    setTemplates(newOrder);
+  }, [setTemplates]);
+
   const addExercise = useCallback((exercise: Exercise) => {
     setCustomExercises(prev => [...prev, exercise]);
   }, [setCustomExercises]);
@@ -162,5 +166,6 @@ export function useWorkoutData() {
     pauseSession,
     resumeSession,
     getLastSessionData,
+    updateTemplateOrder,
   };
 }

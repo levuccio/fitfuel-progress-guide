@@ -22,10 +22,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PausedSessionBanner } from "@/components/workout/PausedSessionBanner";
 import { WorkoutTemplate } from "@/types/workout";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
-  const { templates, activeSession, deleteTemplate, resumeSession, discardSession } = useWorkoutData();
+  const { templates, activeSession, deleteTemplate, resumeSession, discardSession, updateTemplateOrder } = useWorkoutData();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<WorkoutTemplate | null>(null);
 
@@ -60,6 +61,19 @@ export default function WorkoutsPage() {
     return totalMinutes;
   };
 
+  // Handle drag end for reordering
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) {
+      return;
+    }
+
+    const reorderedTemplates = Array.from(templates);
+    const [removed] = reorderedTemplates.splice(result.source.index, 1);
+    reorderedTemplates.splice(result.destination.index, 0, removed);
+
+    updateTemplateOrder(reorderedTemplates);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -84,67 +98,96 @@ export default function WorkoutsPage() {
         />
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {templates.map((template) => (
-          <Card key={template.id} className="glass-card group hover:border-primary/50 transition-all">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-              <div className="space-y-1">
-                {template.dayOfWeek && (
-                  <span className="text-xs font-medium text-primary uppercase tracking-wide">
-                    {template.dayOfWeek}
-                  </span>
-                )}
-                <CardTitle className="text-lg">{template.name}</CardTitle>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate(`/template/${template.id}/edit`)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                  {template.isCustom && (
-                    <DropdownMenuItem
-                      onClick={() => handleDeleteTemplate(template)}
-                      className="text-destructive focus:text-destructive"
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="templates">
+          {(provided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="grid gap-4 sm:grid-cols-2"
+            >
+              {templates.map((template, index) => (
+                <Draggable key={template.id} draggableId={template.id} index={index}>
+                  {(provided, snapshot) => (
+                    <Card
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className={`glass-card group hover:border-primary/50 transition-all ${
+                        snapshot.isDragging ? "shadow-xl ring-2 ring-primary" : ""
+                      }`}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
+                      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                        <div className="space-y-1">
+                          {template.dayOfWeek && (
+                            <span className="text-xs font-medium text-primary uppercase tracking-wide">
+                              {template.dayOfWeek}
+                            </span>
+                          )}
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            {template.name}
+                            {template.isCustom && (
+                              <span className="text-xs font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                                Custom
+                              </span>
+                            )}
+                          </CardTitle>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/template/${template.id}/edit`)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            {template.isCustom && (
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteTemplate(template)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Dumbbell className="h-4 w-4" />
+                            <span>{template.exercises.length} exercises</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span>{getTotalSets(template)} sets</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4" />
+                            <span>~{getEstimatedTime(template)} min</span>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => handleStartWorkout(template.id)}
+                          className="w-full gap-2"
+                          disabled={!!activeSession}
+                        >
+                          <Play className="h-4 w-4" />
+                          Start Workout
+                        </Button>
+                      </CardContent>
+                    </Card>
                   )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <Dumbbell className="h-4 w-4" />
-                  <span>{template.exercises.length} exercises</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span>{getTotalSets(template)} sets</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" />
-                  <span>~{getEstimatedTime(template)} min</span>
-                </div>
-              </div>
-              <Button
-                onClick={() => handleStartWorkout(template.id)}
-                className="w-full gap-2"
-                disabled={!!activeSession}
-              >
-                <Play className="h-4 w-4" />
-                Start Workout
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
