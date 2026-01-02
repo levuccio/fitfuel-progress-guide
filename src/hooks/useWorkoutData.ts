@@ -84,7 +84,7 @@ export function useWorkoutData() {
   }, [sessions]);
 
   const getExerciseHistoryData = useCallback((exerciseId: string) => {
-    const historyData: { date: string; maxWeight: number }[] = [];
+    const historyData: { date: string; maxWeight: number; estimatedRM10?: number }[] = [];
 
     sessions.filter(s => s.status === "completed").forEach(session => {
       const exerciseLog = session.exercises.find(ex => ex.exerciseId === exerciseId);
@@ -93,10 +93,25 @@ export function useWorkoutData() {
         const completedSets = exerciseLog.sets.filter(set => set.completed);
         if (completedSets.length > 0) {
           const maxWeightInSession = Math.max(...completedSets.map(set => set.weight));
-          if (maxWeightInSession > 0) {
+          let maxEstimatedRM10InSession = 0;
+
+          completedSets.forEach(set => {
+            if (set.weight > 0 && set.reps > 0) {
+              // Epley formula for 1RM: 1RM = weight * (1 + reps / 30)
+              const estimated1RM = set.weight * (1 + set.reps / 30);
+              // RM10 is approximately 75% of 1RM
+              const estimatedRM10 = estimated1RM * 0.75;
+              if (estimatedRM10 > maxEstimatedRM10InSession) {
+                maxEstimatedRM10InSession = estimatedRM10;
+              }
+            }
+          });
+
+          if (maxWeightInSession > 0 || maxEstimatedRM10InSession > 0) {
             historyData.push({
               date: session.startTime, // Use session.startTime for unique data points
               maxWeight: maxWeightInSession,
+              estimatedRM10: maxEstimatedRM10InSession > 0 ? maxEstimatedRM10InSession : undefined,
             });
           }
         }

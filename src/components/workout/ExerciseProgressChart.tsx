@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Area,
+  Legend, // Import Legend
 } from "recharts";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { format } from "date-fns";
@@ -34,6 +35,7 @@ export function ExerciseProgressChart({ exerciseId }: ExerciseProgressChartProps
     index: index,
     date: dataPoint.date,
     maxWeight: dataPoint.maxWeight,
+    estimatedRM10: dataPoint.estimatedRM10, // Include estimatedRM10
   }));
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -42,7 +44,11 @@ export function ExerciseProgressChart({ exerciseId }: ExerciseProgressChartProps
       return (
         <div className="rounded-lg border bg-popover p-2 text-sm shadow-md">
           <p className="font-semibold text-foreground">{format(new Date(dataPoint.date), "MMM d, yyyy")}</p>
-          <p className="text-muted-foreground">Max Weight: {payload[0].value} kg</p>
+          {payload.map((entry: any, i: number) => (
+            <p key={i} style={{ color: entry.stroke }}>
+              {entry.name}: {entry.value.toFixed(1)} kg
+            </p>
+          ))}
         </div>
       );
     }
@@ -76,9 +82,11 @@ export function ExerciseProgressChart({ exerciseId }: ExerciseProgressChartProps
             domain={['auto', 'auto']} // Adjust domain dynamically
           />
           <Tooltip content={<CustomTooltip />} />
+          <Legend /> {/* Add Legend */}
           <Area
             type="monotone"
             dataKey="maxWeight"
+            name="Max Weight" // Name for legend
             stroke="hsl(var(--primary))"
             fill="hsl(var(--primary) / 0.2)" // Transparent primary color (green)
             strokeWidth={2}
@@ -86,10 +94,22 @@ export function ExerciseProgressChart({ exerciseId }: ExerciseProgressChartProps
           <Line
             type="monotone"
             dataKey="maxWeight"
+            name="Max Weight" // Name for legend
             stroke="hsl(var(--primary))"
             dot={{ r: 4, fill: "hsl(var(--primary))" }}
             activeDot={{ r: 6, fill: "hsl(var(--primary))", stroke: "hsl(var(--primary))", strokeWidth: 2 }}
           />
+          {chartData.some(d => d.estimatedRM10 !== undefined) && ( // Only show if RM10 data exists
+            <Line
+              type="monotone"
+              dataKey="estimatedRM10"
+              name="Est. RM10" // Name for legend
+              stroke="hsl(var(--accent))" // Use a different color for RM10
+              strokeWidth={2}
+              dot={{ r: 4, fill: "hsl(var(--accent))" }}
+              activeDot={{ r: 6, fill: "hsl(var(--accent))", stroke: "hsl(var(--accent))", strokeWidth: 2 }}
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>
