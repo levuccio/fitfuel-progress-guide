@@ -1,13 +1,16 @@
 import { WorkoutTemplate } from "@/types/workout";
 import { defaultExercises } from "./exercises";
 
-const getExercise = (id: string) => defaultExercises.find(e => e.id === id)!;
+const getExercise = (id: string) =>
+  defaultExercises.find(e => e.id === id)!;
 
 export const defaultTemplates: WorkoutTemplate[] = [
-  // Monday - Upper Body (DB + Cable + Machine)
+  // =====================
+  // MONDAY – UPPER BODY
+  // =====================
   {
     id: "monday-upper",
-    name: "Upper Body (Mandag)",
+    name: "Upper Body",
     dayOfWeek: "Monday",
     isCustom: false,
     createdAt: new Date().toISOString(),
@@ -15,8 +18,8 @@ export const defaultTemplates: WorkoutTemplate[] = [
     exercises: [
       {
         id: "m1",
-        exerciseId: "db-press-15deg",
-        exercise: getExercise("db-press-15deg"),
+        exerciseId: "db-press-15",
+        exercise: getExercise("db-press-15"),
         sets: 3,
         reps: "6-8",
         restSeconds: 180,
@@ -42,24 +45,24 @@ export const defaultTemplates: WorkoutTemplate[] = [
       },
       {
         id: "m4",
-        exerciseId: "chest-supported-row",
-        exercise: getExercise("chest-supported-row"),
+        exerciseId: "chest-supported-row-pin",
+        exercise: getExercise("chest-supported-row-pin"),
         sets: 2,
         reps: "8-10",
         restSeconds: 180,
         order: 4,
       },
       {
-        id: "m5a",
+        id: "m5",
         exerciseId: "tricep-pushdown-bar",
         exercise: getExercise("tricep-pushdown-bar"),
         sets: 3,
         reps: "8-10",
-        restSeconds: 30,
+        restSeconds: 60,
         order: 5,
       },
       {
-        id: "m5b",
+        id: "m6",
         exerciseId: "cable-curls",
         exercise: getExercise("cable-curls"),
         sets: 3,
@@ -70,10 +73,12 @@ export const defaultTemplates: WorkoutTemplate[] = [
     ],
   },
 
-  // Wednesday - Lower Body
+  // =====================
+  // WEDNESDAY – LOWER BODY
+  // =====================
   {
     id: "wednesday-lower",
-    name: "Lower Body (Onsdag)",
+    name: "Lower Body",
     dayOfWeek: "Wednesday",
     isCustom: false,
     createdAt: new Date().toISOString(),
@@ -81,8 +86,8 @@ export const defaultTemplates: WorkoutTemplate[] = [
     exercises: [
       {
         id: "w1",
-        exerciseId: "leg-press-quads",
-        exercise: getExercise("leg-press-quads"),
+        exerciseId: "leg-press",
+        exercise: getExercise("leg-press"),
         sets: 2,
         reps: "6-8",
         restSeconds: 180,
@@ -117,8 +122,8 @@ export const defaultTemplates: WorkoutTemplate[] = [
       },
       {
         id: "w5",
-        exerciseId: "cable-laterals-high",
-        exercise: getExercise("cable-laterals-high"),
+        exerciseId: "high-cable-laterals",
+        exercise: getExercise("high-cable-laterals"),
         sets: 2,
         reps: "8-10",
         restSeconds: 180,
@@ -136,10 +141,12 @@ export const defaultTemplates: WorkoutTemplate[] = [
     ],
   },
 
-  // Friday - Chest & Arms
+  // =====================
+  // FRIDAY – FULL BODY
+  // =====================
   {
-    id: "friday-upper",
-    name: "Chest & Arms (Fredag)",
+    id: "friday-full",
+    name: "Full Body",
     dayOfWeek: "Friday",
     isCustom: false,
     createdAt: new Date().toISOString(),
@@ -147,8 +154,8 @@ export const defaultTemplates: WorkoutTemplate[] = [
     exercises: [
       {
         id: "f1",
-        exerciseId: "db-press-45deg",
-        exercise: getExercise("db-press-45deg"),
+        exerciseId: "db-press-45",
+        exercise: getExercise("db-press-45"),
         sets: 2,
         reps: "6-8",
         restSeconds: 180,
@@ -174,8 +181,8 @@ export const defaultTemplates: WorkoutTemplate[] = [
       },
       {
         id: "f4",
-        exerciseId: "leg-extension",
-        exercise: getExercise("leg-extension"),
+        exerciseId: "leg-extensions",
+        exercise: getExercise("leg-extensions"),
         sets: 2,
         reps: "8-10",
         restSeconds: 180,
@@ -202,10 +209,12 @@ export const defaultTemplates: WorkoutTemplate[] = [
     ],
   },
 
-  // Weekend - Abs
+  // =====================
+  // WEEKEND – ABS
+  // =====================
   {
     id: "weekend-abs",
-    name: "Abs (Lørdag/Søndag)",
+    name: "Abs",
     dayOfWeek: "Weekend",
     isCustom: false,
     createdAt: new Date().toISOString(),
