@@ -23,8 +23,8 @@ import {
 import { PausedSessionBanner } from "@/components/workout/PausedSessionBanner";
 import { WorkoutTemplate } from "@/types/workout";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
-import { StatCircle } from "@/components/StatCircle"; // Import the new component
-import { isThisWeek, isAfter, startOfWeek, endOfWeek } from "date-fns";
+import { StatCircle } from "@/components/StatCircle";
+import { isAfter, startOfWeek, endOfWeek } from "date-fns";
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
@@ -112,21 +112,6 @@ export default function WorkoutsPage() {
           onDiscard={discardSession}
         />
       )}
-
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <StatCircle
-          value={sessionsThisWeek}
-          label="Workouts this week"
-          icon={CalendarDays}
-          colorClass="bg-blue-500/10 text-blue-500"
-        />
-        <StatCircle
-          value={totalSessions}
-          label="Total workouts"
-          icon={Activity}
-          colorClass="bg-purple-500/10 text-purple-500"
-        />
-      </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="templates">
@@ -216,6 +201,21 @@ export default function WorkoutsPage() {
           )}
         </Droppable>
       </DragDropContext>
+
+      <div className="grid grid-cols-2 gap-4 mt-6"> {/* Moved here */}
+        <StatCircle
+          value={sessionsThisWeek}
+          label="Workouts this week"
+          icon={CalendarDays}
+          colorClass="bg-blue-500/10 text-blue-500"
+        />
+        <StatCircle
+          value={totalSessions}
+          label="Total workouts"
+          icon={Activity}
+          colorClass="bg-purple-500/10 text-purple-500"
+        />
+      </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
