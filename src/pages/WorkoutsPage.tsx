@@ -99,32 +99,37 @@ export default function WorkoutsPage() {
       0
     );
     const workingTime = template.exercises.length * 3 * 60; // ~3 min per exercise
-    let totalMinutes = Math.round((totalRestSeconds + workingTime) / 60);
+    let totalMinutesRaw = (totalRestSeconds + workingTime) / 60;
 
-    if (totalMinutes === 0) {
+    if (totalMinutesRaw === 0) {
       return "0 min";
     }
 
-    // Round up to the next hour if close (e.g., 57-59 min becomes 1h)
-    if (totalMinutes < 60) {
-      if (totalMinutes >= 57) {
-        return "1h";
-      }
-      return `${totalMinutes} min`;
-    }
+    let hours = Math.floor(totalMinutesRaw / 60);
+    let minutes = Math.round(totalMinutesRaw % 60); // Round minutes to nearest integer first
 
-    let hours = Math.floor(totalMinutes / 60);
-    let remainingMinutes = totalMinutes % 60;
-
-    if (remainingMinutes >= 57) { // If remaining minutes are 57 or more, round up to next hour
+    // Rule 1: Round up to next hour if minutes are 57-59
+    if (minutes >= 57 && minutes < 60) {
       hours++;
-      remainingMinutes = 0;
+      minutes = 0;
+    } else {
+      // Rule 2: Otherwise, round minutes to the nearest 5
+      minutes = Math.round(minutes / 5) * 5;
+      
+      // Handle case where rounding minutes to 60 pushes it to the next hour
+      if (minutes === 60) {
+        hours++;
+        minutes = 0;
+      }
     }
 
-    if (remainingMinutes === 0) {
+    // Format the output
+    if (hours === 0) {
+      return `${minutes} min`;
+    } else if (minutes === 0) {
       return `${hours}h`;
     } else {
-      return `${hours}h ${remainingMinutes}m`;
+      return `${hours}h ${minutes}m`;
     }
   };
 
