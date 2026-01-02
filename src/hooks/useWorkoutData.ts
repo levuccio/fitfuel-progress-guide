@@ -197,6 +197,16 @@ export function useWorkoutData() {
     setActiveSession({ ...activeSession, status: "in_progress" });
   }, [activeSession, setActiveSession]);
 
+  const updateSessionDuration = useCallback((sessionId: string, newDurationSeconds: number) => {
+    setSessions(prevSessions =>
+      prevSessions.map(session =>
+        session.id === sessionId
+          ? { ...session, totalDuration: newDurationSeconds }
+          : session
+      )
+    );
+  }, [setSessions]);
+
   const restoreFactorySettings = useCallback(() => {
     setTemplates(defaultTemplates);
     setSessions([]);
@@ -226,5 +236,6 @@ export function useWorkoutData() {
     getTemplateById,
     restoreFactorySettings,
     getExerciseHistoryData,
+    updateSessionDuration, // Expose the new function
   };
 }

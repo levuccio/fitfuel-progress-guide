@@ -25,6 +25,7 @@ import { WorkoutTemplate } from "@/types/workout";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { StatCircle } from "@/components/StatCircle";
 import { isAfter, startOfWeek, endOfWeek } from "date-fns";
+import { formatDurationShort } from "@/lib/utils"; // Import the new utility
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
@@ -33,16 +34,6 @@ export default function WorkoutsPage() {
   const [templateToDelete, setTemplateToDelete] = useState<WorkoutTemplate | null>(null);
 
   const completedSessions = sessions.filter(s => s.status === "completed");
-
-  const formatDurationShort = (totalSeconds: number) => {
-    if (totalSeconds < 60) return `${totalSeconds}s`;
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
 
   const sessionsThisWeek = completedSessions.filter(session => {
     const sessionDate = new Date(session.startTime);
