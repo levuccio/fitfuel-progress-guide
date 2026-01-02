@@ -3,8 +3,8 @@ import { Exercise } from "@/types/workout";
 export const defaultExercises: Exercise[] = [
   // Upper Body - Push
   {
-    id: "bench-press",
-    name: "Bench Press",
+    id: "DB Press, 15 grader",
+    name: "DB Press, 15 grader",
     description: "Lie on a flat bench and press the barbell up from your chest",
     targetMuscles: ["Chest", "Triceps", "Shoulders"],
     equipment: ["Barbell", "Bench"],
