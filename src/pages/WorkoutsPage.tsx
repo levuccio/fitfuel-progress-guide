@@ -229,7 +229,7 @@ export default function WorkoutsPage() {
         </Droppable>
       </DragDropContext>
 
-      <div className="grid grid-cols-2 gap-4 mt-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6"> {/* Changed grid-cols-2 to sm:grid-cols-4 */}
         <StatCircle
           value={sessionsThisWeek}
           label="Workouts this week"
