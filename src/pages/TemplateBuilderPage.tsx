@@ -113,7 +113,7 @@ export default function TemplateBuilderPage() {
 
     addTemplate(newTemplate);
     toast({ title: "Template created!", description: `"${name}" has been saved.` });
-    navigate("/workouts");
+    navigate("/"); // Corrected path to WorkoutsPage
   };
 
   return (
