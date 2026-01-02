@@ -9,10 +9,10 @@ export const defaultRecipes: Recipe[] = [
     cookTime: 0,
     servings: 1,
     ingredients: [
-      { id: "1", name: "Rolled oats", amount: 50, unit: "g" },
+      { id: "1", name: "Rolled oats", amount: 75, unit: "g" },
       { id: "2", name: "Chia seeds", amount: 15, unit: "g" },
-      { id: "3", name: "Cottage cheese", amount: 100, unit: "g" },
-      { id: "4", name: "Milk (any type)", amount: 120, unit: "ml" },
+      { id: "3", name: "Cottage cheese", amount: 95, unit: "g" },
+      { id: "4", name: "Milk (any type)", amount: 175, unit: "ml" },
       { id: "5", name: "Kiwi", amount: 1, unit: "medium" },
       { id: "6", name: "Honey or maple syrup", amount: 1, unit: "tbsp" },
       { id: "7", name: "Vanilla extract", amount: 0.5, unit: "tsp" },
