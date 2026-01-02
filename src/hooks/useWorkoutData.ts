@@ -48,6 +48,10 @@ export function useWorkoutData() {
     setTemplates(newOrder);
   }, [setTemplates]);
 
+  const getTemplateById = useCallback((templateId: string) => {
+    return templates.find(t => t.id === templateId);
+  }, [templates]);
+
   const addExercise = useCallback((exercise: Exercise) => {
     setCustomExercises(prev => [...prev, exercise]);
   }, [setCustomExercises]);
@@ -90,8 +94,6 @@ export function useWorkoutData() {
           throw new Error(`Exercise not found: ${te.exerciseId}`);
         }
 
-        const lastExerciseData = lastData?.[te.exerciseId];
-
         return {
           id: crypto.randomUUID(),
           exerciseId: te.exerciseId,
@@ -102,8 +104,8 @@ export function useWorkoutData() {
           sets: Array.from({ length: te.sets }, (_, i) => ({
             id: crypto.randomUUID(),
             setNumber: i + 1,
-            reps: lastExerciseData?.sets[i]?.reps || 0,
-            weight: lastExerciseData?.sets[i]?.weight || 0,
+            reps: lastData?.[te.exerciseId]?.sets[i]?.reps || 0,
+            weight: lastData?.[te.exerciseId]?.sets[i]?.weight || 0,
             completed: false,
           })),
         };
@@ -167,5 +169,6 @@ export function useWorkoutData() {
     resumeSession,
     getLastSessionData,
     updateTemplateOrder,
+    getTemplateById,
   };
 }

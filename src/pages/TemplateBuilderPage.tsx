@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import { WorkoutTemplate, TemplateExercise, Exercise } from "@/types/workout";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,11 +27,34 @@ function normalizeRepsInput(val: string) {
 
 export default function TemplateBuilderPage() {
   const navigate = useNavigate();
-  const { addTemplate, addExercise, allExercises } = useWorkoutData();
+  const { id: templateId } = useParams<{ id: string }>();
+  const { addTemplate, updateTemplate, addExercise, allExercises, getTemplateById } = useWorkoutData();
   const { toast } = useToast();
 
   const [name, setName] = useState("");
   const [builderExercises, setBuilderExercises] = useState<BuilderExercise[]>([]);
+  const isEditing = !!templateId;
+
+  useEffect(() => {
+    if (isEditing && templateId) {
+      const existingTemplate = getTemplateById(templateId);
+      if (existingTemplate) {
+        setName(existingTemplate.name);
+        setBuilderExercises(
+          existingTemplate.exercises.map(ex => ({
+            id: ex.id, // Use existing ID for builder, or generate new if needed
+            exerciseName: ex.exercise.name,
+            sets: ex.sets,
+            reps: ex.reps,
+            restSeconds: ex.restSeconds,
+          }))
+        );
+      } else {
+        toast({ title: "Template not found", description: "The template you tried to edit does not exist." });
+        navigate("/");
+      }
+    }
+  }, [isEditing, templateId, getTemplateById, navigate, toast]);
 
   const addBuilderExercise = () => {
     setBuilderExercises(prev => [
@@ -89,7 +112,7 @@ export default function TemplateBuilderPage() {
       }
 
       templateExercises.push({
-        id: crypto.randomUUID(), // Unique ID for this instance in the template
+        id: bEx.id, // Use existing builder ID for consistency, or generate new if it's a new exercise in an existing template
         exerciseId: exercise.id,
         exercise: exercise,
         sets: bEx.sets,
@@ -102,23 +125,43 @@ export default function TemplateBuilderPage() {
     // Add any newly created custom exercises to the global list
     newCustomExercises.forEach(ex => addExercise(ex));
 
-    const newTemplate: WorkoutTemplate = {
-      id: crypto.randomUUID(),
-      name,
-      exercises: templateExercises,
-      isCustom: true, // Templates created here are custom
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    addTemplate(newTemplate);
-    toast({ title: "Template created!", description: `"${name}" has been saved.` });
-    navigate("/"); // Corrected path to WorkoutsPage
+    if (isEditing && templateId) {
+      const updatedTemplate: WorkoutTemplate = {
+        id: templateId,
+        name,
+        exercises: templateExercises,
+        isCustom: true, // Always true for editable templates
+        createdAt: getTemplateById(templateId)?.createdAt || new Date().toISOString(), // Preserve original creation date
+        updatedAt: new Date().toISOString(),
+      };
+      updateTemplate(updatedTemplate);
+      toast({ title: "Template updated!", description: `"${name}" has been saved.` });
+    } else {
+      const newTemplate: WorkoutTemplate = {
+        id: crypto.randomUUID(),
+        name,
+        exercises: templateExercises,
+        isCustom: true, // Templates created here are custom
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      addTemplate(newTemplate);
+      toast({ title: "Template created!", description: `"${name}" has been saved.` });
+    }
+    
+    navigate("/");
   };
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-foreground">New Template</h1>
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-foreground">
+          {isEditing ? "Edit Template" : "New Template"}
+        </h1>
+      </div>
 
       <div>
         <Label htmlFor="template-name">Template name</Label>
@@ -200,7 +243,7 @@ export default function TemplateBuilderPage() {
       </Button>
 
       <Button onClick={handleSave} className="w-full">
-        Save Template
+        {isEditing ? "Update Template" : "Save Template"}
       </Button>
     </div>
   );
