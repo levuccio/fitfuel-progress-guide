@@ -143,7 +143,7 @@ export default function WorkoutsPage() {
             <Dumbbell className="inline-block h-7 w-7 mr-2 text-primary" />
             FitGutta
           </h1>
-          <p className="text-muted-foreground">Your personalized fitness journey starts here.</p>
+          {/* Removed: <p className="text-muted-foreground">Your personalized fitness journey starts here.</p> */}
         </div>
         <Button onClick={() => navigate("/template/new")} className="gap-2">
           <Plus className="h-4 w-4" />
