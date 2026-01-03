@@ -13,20 +13,14 @@ interface RestTimerProps {
 }
 
 export function RestTimer({ initialSeconds, onComplete, autoStart = true }: RestTimerProps) {
-  const [remainingSeconds, setRemainingSeconds] = useState(initialSeconds);
+  const [secondsRemaining, setSecondsRemaining] = useState(initialSeconds);
   const [isRunning, setIsRunning] = useState(autoStart);
   const [isComplete, setIsComplete] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const initialSecondsPropRef = useRef(initialSeconds); // To keep track of the original initialSeconds prop
-
-  // Update initialSecondsPropRef when the prop changes
-  useEffect(() => {
-    initialSecondsPropRef.current = initialSeconds;
-  }, [initialSeconds]);
 
   // Effect to reset timer when initialSeconds prop changes
   useEffect(() => {
-    setRemainingSeconds(initialSeconds);
+    setSecondsRemaining(initialSeconds);
     setIsRunning(autoStart);
     setIsComplete(false);
     // Clear any existing interval to ensure a clean restart
@@ -38,12 +32,12 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
 
   // Effect for the countdown logic
   useEffect(() => {
-    if (!isRunning || isComplete || remainingSeconds <= 0) {
+    if (!isRunning || isComplete || secondsRemaining <= 0) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      if (remainingSeconds <= 0 && !isComplete) {
+      if (secondsRemaining <= 0 && !isComplete) {
         setIsComplete(true);
         setIsRunning(false);
         onComplete?.();
@@ -52,8 +46,9 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
     }
 
     intervalRef.current = setInterval(() => {
-      setRemainingSeconds(prev => {
+      setSecondsRemaining(prev => {
         if (prev <= 1) {
+          // This is the last second, so the timer will complete
           setIsComplete(true);
           setIsRunning(false);
           onComplete?.();
@@ -73,24 +68,24 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
         intervalRef.current = null;
       }
     };
-  }, [isRunning, isComplete, remainingSeconds, onComplete]);
+  }, [isRunning, isComplete, secondsRemaining, onComplete]);
 
   const adjustTime = useCallback((delta: number) => {
-    setRemainingSeconds(prev => Math.max(0, prev + delta));
+    setSecondsRemaining(prev => Math.max(0, prev + delta));
     setIsRunning(true); // Start timer if adjusting time
     setIsComplete(false); // Not complete if adjusting time
   }, []);
 
   const resetTimer = useCallback(() => {
-    setRemainingSeconds(initialSecondsPropRef.current); // Reset to the original initialSeconds prop
+    setSecondsRemaining(initialSeconds); // Reset to the current initialSeconds prop
     setIsRunning(true);
     setIsComplete(false);
-  }, []);
+  }, [initialSeconds]);
 
   const skipTimer = useCallback(() => {
     setIsComplete(true);
     setIsRunning(false);
-    setRemainingSeconds(0);
+    setSecondsRemaining(0);
     onComplete?.();
   }, [onComplete]);
 
@@ -100,7 +95,7 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
     return `${mins}:${s.toString().padStart(2, "0")}`;
   };
 
-  const progress = initialSecondsPropRef.current > 0 ? (remainingSeconds / initialSecondsPropRef.current) * 100 : 0;
+  const progress = initialSeconds > 0 ? (secondsRemaining / initialSeconds) * 100 : 0;
 
   return (
     <Card className={cn(
@@ -113,7 +108,7 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
             {isComplete ? "Rest Complete!" : "Rest Timer"}
           </p>
           <div className="text-4xl font-bold text-foreground tabular-nums">
-            {formatTime(remainingSeconds)}
+            {formatTime(secondsRemaining)}
           </div>
         </div>
 
@@ -133,7 +128,7 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
             variant="outline"
             size="icon"
             onClick={() => adjustTime(-30)}
-            disabled={remainingSeconds <= 0}
+            disabled={secondsRemaining <= 0}
           >
             <Minus className="h-4 w-4" />
           </Button>
