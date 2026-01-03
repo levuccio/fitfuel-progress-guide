@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
@@ -8,20 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Pause, Play, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { SetRow } from "@/components/workout/SetRow";
-import { RestTimer } from "@/components/workout/RestTimer"; // Re-using the existing RestTimer
+import { RestTimer } from "@/components/workout/RestTimer";
+import { ExerciseProgressChart } from "@/components/workout/ExerciseProgressChart";
 import { ExerciseLog, SetLog } from "@/types/workout";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner"; // Using sonner for toasts
 
 export default function WorkoutSessionPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { templates, activeSession, startSession, updateActiveSession, completeSession, pauseSession, getLastSessionData } = useWorkoutData();
 
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [showRestTimer, setShowRestTimer] = useState(false);
-  const [restSeconds, setRestSeconds] = useState(180); // Default rest seconds
+  const [restTimerKey, setRestTimerKey] = useState(0); // Key to force remount/reset of RestTimer
   const [elapsedTime, setElapsedTime] = useState(0);
 
   const template = templates.find(t => t.id === templateId);
@@ -57,10 +55,9 @@ export default function WorkoutSessionPage() {
   };
 
   const handleSetUpdate = (exerciseId: string, updatedSet: SetLog) => {
-    const currentExerciseLog = activeSession.exercises.find(e => e.id === exerciseId);
-    if (!currentExerciseLog) return;
-
-    const wasJustCompleted = updatedSet.completed && !currentExerciseLog.sets.find(s => s.id === updatedSet.id)?.completed;
+    const currentExercise = activeSession.exercises.find(e => e.id === exerciseId);
+    const currentSet = currentExercise?.sets.find(s => s.id === updatedSet.id);
+    const wasJustCompleted = updatedSet.completed && !currentSet?.completed;
     
     const updatedExercises = activeSession.exercises.map(ex => 
       ex.id === exerciseId 
@@ -70,21 +67,15 @@ export default function WorkoutSessionPage() {
     updateActiveSession({ ...activeSession, exercises: updatedExercises });
 
     if (wasJustCompleted) {
-      // Check if this was the last set of the current exercise
-      const isLastSetOfExercise = updatedSet.setNumber === currentExerciseLog.sets.length;
-      
-      if (isLastSetOfExercise) {
-        setRestSeconds(60); // 1 minute rest after the last set of an exercise
-      } else {
-        setRestSeconds(currentExerciseLog.restSeconds); // User-defined rest for other sets
-      }
+      // Start a 60-second rest timer
       setShowRestTimer(true);
+      setRestTimerKey(prev => prev + 1); // Increment key to force RestTimer remount/reset
     }
   };
 
   const handleComplete = () => {
     completeSession();
-    toast({ title: "Workout Complete!", description: `${completedSets}/${totalSets} sets in ${formatTime(elapsedTime)}` });
+    toast.success("Workout Complete!", { description: `${completedSets}/${totalSets} sets in ${formatTime(elapsedTime)}` });
     navigate("/");
   };
 
@@ -109,7 +100,7 @@ export default function WorkoutSessionPage() {
       </div>
 
       {showRestTimer && (
-        <RestTimer initialSeconds={restSeconds} onComplete={() => setShowRestTimer(false)} />
+        <RestTimer key={restTimerKey} initialSeconds={60} onComplete={() => setShowRestTimer(false)} />
       )}
 
       <div className="space-y-3">
@@ -134,6 +125,9 @@ export default function WorkoutSessionPage() {
               </CardHeader>
               {isExpanded && (
                 <CardContent className="p-4 pt-0 space-y-2">
+                  {/* Exercise Progress Chart */}
+                  <ExerciseProgressChart exerciseId={exercise.exerciseId} />
+
                   {lastData && (
                     <p className="text-xs text-muted-foreground mb-2">
                       Last: {lastData.sets.map(s => `${s.weight}kg×${s.reps}`).join(", ")}

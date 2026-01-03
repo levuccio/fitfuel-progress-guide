@@ -1,6 +1,4 @@
-"use client";
-
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Play, Pause, RotateCcw, SkipForward, Plus, Minus } from "lucide-react";
@@ -13,89 +11,46 @@ interface RestTimerProps {
 }
 
 export function RestTimer({ initialSeconds, onComplete, autoStart = true }: RestTimerProps) {
-  const [secondsRemaining, setSecondsRemaining] = useState(initialSeconds);
+  const [seconds, setSeconds] = useState(initialSeconds);
   const [isRunning, setIsRunning] = useState(autoStart);
   const [isComplete, setIsComplete] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Effect to reset timer when initialSeconds prop changes
+  // Reset timer when initialSeconds changes
   useEffect(() => {
-    setSecondsRemaining(initialSeconds);
+    setSeconds(initialSeconds);
     setIsRunning(autoStart);
     setIsComplete(false);
-    // Clear any existing interval to ensure a clean restart
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
   }, [initialSeconds, autoStart]);
 
-  // Effect for the countdown logic
   useEffect(() => {
-    if (!isRunning || isComplete || secondsRemaining <= 0) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      if (secondsRemaining <= 0 && !isComplete) {
-        setIsComplete(true);
-        setIsRunning(false);
-        onComplete?.();
-      }
-      return;
-    }
+    if (!isRunning || isComplete) return;
 
-    intervalRef.current = setInterval(() => {
-      setSecondsRemaining(prev => {
+    const interval = setInterval(() => {
+      setSeconds(prev => {
         if (prev <= 1) {
-          // This is the last second, so the timer will complete
           setIsComplete(true);
           setIsRunning(false);
           onComplete?.();
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, isComplete, secondsRemaining, onComplete]);
+    return () => clearInterval(interval);
+  }, [isRunning, isComplete, onComplete]);
 
-  const adjustTime = useCallback((delta: number) => {
-    setSecondsRemaining(prev => Math.max(0, prev + delta));
-    setIsRunning(true); // Start timer if adjusting time
-    setIsComplete(false); // Not complete if adjusting time
-  }, []);
-
-  const resetTimer = useCallback(() => {
-    setSecondsRemaining(initialSeconds); // Reset to the current initialSeconds prop
-    setIsRunning(true);
-    setIsComplete(false);
-  }, [initialSeconds]);
-
-  const skipTimer = useCallback(() => {
-    setIsComplete(true);
-    setIsRunning(false);
-    setSecondsRemaining(0);
-    onComplete?.();
-  }, [onComplete]);
+  const adjustTime = (delta: number) => {
+    setSeconds(prev => Math.max(0, prev + delta));
+  };
 
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${mins}:${s.toString().padStart(2, "0")}`;
+    const remainingSecs = secs % 60;
+    return `${mins}:${remainingSecs.toString().padStart(2, "0")}`;
   };
 
-  const progress = initialSeconds > 0 ? (secondsRemaining / initialSeconds) * 100 : 0;
+  const progress = (seconds / initialSeconds) * 100;
 
   return (
     <Card className={cn(
@@ -108,7 +63,7 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
             {isComplete ? "Rest Complete!" : "Rest Timer"}
           </p>
           <div className="text-4xl font-bold text-foreground tabular-nums">
-            {formatTime(secondsRemaining)}
+            {formatTime(seconds)}
           </div>
         </div>
 
@@ -128,7 +83,7 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
             variant="outline"
             size="icon"
             onClick={() => adjustTime(-30)}
-            disabled={secondsRemaining <= 0}
+            disabled={seconds <= 0}
           >
             <Minus className="h-4 w-4" />
           </Button>
@@ -142,7 +97,11 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
             {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
 
-          <Button variant="outline" size="icon" onClick={resetTimer}>
+          <Button variant="outline" size="icon" onClick={() => {
+            setSeconds(initialSeconds);
+            setIsRunning(true);
+            setIsComplete(false);
+          }}>
             <RotateCcw className="h-4 w-4" />
           </Button>
 
@@ -157,7 +116,12 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
           <Button
             variant={isComplete ? "default" : "outline"}
             size="icon"
-            onClick={skipTimer}
+            onClick={() => {
+              setIsComplete(true);
+              setIsRunning(false);
+              setSeconds(0);
+              onComplete?.();
+            }}
           >
             <SkipForward className="h-4 w-4" />
           </Button>
