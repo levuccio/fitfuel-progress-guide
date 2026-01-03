@@ -11,17 +11,17 @@ interface StatCircleProps {
 
 export function StatCircle({ value, label, icon: Icon, colorClass = "bg-primary/10 text-primary" }: StatCircleProps) {
   return (
-    <div className="flex flex-col items-center text-center p-4">
+    <div className="flex flex-col items-center text-center p-2"> {/* Reduced padding */}
       <div
         className={cn(
-          "relative w-24 h-24 rounded-full flex items-center justify-center mb-2",
+          "relative w-18 h-18 rounded-full flex items-center justify-center mb-1", // Reduced size (24*0.75=18)
           colorClass
         )}
       >
-        <Icon className="w-8 h-8 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20" />
-        <span className="text-3xl font-bold relative z-10">{value}</span>
+        <Icon className="w-6 h-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20" /> {/* Reduced icon size */}
+        <span className="text-2xl font-bold relative z-10">{value}</span> {/* Reduced text size */}
       </div>
-      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p> {/* Reduced label text size */}
     </div>
   );
 }

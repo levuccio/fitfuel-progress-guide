@@ -80,6 +80,8 @@ export default function WorkoutsPage() {
     setDeleteDialogOpen(false);
   };
 
+  // The getEstimatedTime function is no longer needed for display on the card,
+  // but keeping it here in case it's used elsewhere or for future features.
   const getEstimatedTime = (template: WorkoutTemplate) => {
     const totalRestSeconds = template.exercises.reduce(
       (acc, ex) => acc + (ex.sets * ex.restSeconds),
@@ -219,11 +221,7 @@ export default function WorkoutsPage() {
                             <Dumbbell className="h-4 w-4" />
                             <span>{template.exercises.length} exercises</span>
                           </div>
-                          {/* Removed sets info to compress card size */}
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="h-4 w-4" />
-                            <span>~{getEstimatedTime(template)}</span>
-                          </div>
+                          {/* Removed estimated time and clock icon */}
                         </div>
                         <Button
                           onClick={() => handleStartWorkout(template.id)}
