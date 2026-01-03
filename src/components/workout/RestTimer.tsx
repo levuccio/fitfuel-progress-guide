@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Play, Pause, RotateCcw, SkipForward, Plus, Minus } from "lucide-react";
@@ -14,29 +16,52 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
   const [seconds, setSeconds] = useState(initialSeconds);
   const [isRunning, setIsRunning] = useState(autoStart);
   const [isComplete, setIsComplete] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const reset = useCallback(() => {
-    setSeconds(initialSeconds);
-    setIsRunning(true);
-    setIsComplete(false);
-  }, [initialSeconds]);
-
+  // Effect to initialize/reset timer when initialSeconds changes
   useEffect(() => {
-    if (!isRunning || isComplete) return;
+    setSeconds(initialSeconds);
+    setIsRunning(autoStart); // Restart timer with new initialSeconds
+    setIsComplete(false);
+    // Clear any existing interval to prevent multiple intervals running
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, [initialSeconds, autoStart]);
 
-    const interval = setInterval(() => {
+  // Effect for the countdown logic
+  useEffect(() => {
+    if (!isRunning || isComplete) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+
+    intervalRef.current = setInterval(() => {
       setSeconds(prev => {
         if (prev <= 1) {
           setIsComplete(true);
           setIsRunning(false);
           onComplete?.();
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [isRunning, isComplete, onComplete]);
 
   const adjustTime = (delta: number) => {
@@ -96,7 +121,11 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
             {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
 
-          <Button variant="outline" size="icon" onClick={reset}>
+          <Button variant="outline" size="icon" onClick={() => {
+            setSeconds(initialSeconds);
+            setIsRunning(true);
+            setIsComplete(false);
+          }}>
             <RotateCcw className="h-4 w-4" />
           </Button>
 
