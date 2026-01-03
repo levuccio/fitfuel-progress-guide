@@ -7,7 +7,7 @@ export const defaultRecipes: Recipe[] = [
     description: "High-protein overnight oats packed with fiber and healthy fats. Perfect for meal prep!",
     prepTime: 10,
     cookTime: 0,
-    servings: 7, // Changed to 7 servings
+    servings: 1, // Changed to 1 serving, as macrosPerServing is for one serving
     ingredients: [
       { id: "1", name: "Rolled oats", amount: 75, unit: "g" },
       { id: "2", name: "Chia seeds", amount: 15, unit: "g" },

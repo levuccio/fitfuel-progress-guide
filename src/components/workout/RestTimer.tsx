@@ -14,43 +14,51 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
   const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
   const [isRunning, setIsRunning] = useState(autoStart);
   const [isComplete, setIsComplete] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Effect to reset timer when initialSeconds changes
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const endTimeRef = useRef<number>(0);
+
+  // Effect to initialize/reset timer when initialSeconds changes
   useEffect(() => {
     setSecondsLeft(initialSeconds);
     setIsRunning(autoStart);
     setIsComplete(false);
-    // Clear any existing interval when initialSeconds changes
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    endTimeRef.current = Date.now() + initialSeconds * 1000; // Set initial end time
   }, [initialSeconds, autoStart]);
 
   // Effect for the countdown logic
   useEffect(() => {
-    if (isRunning && secondsLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setSecondsLeft(prev => {
-          if (prev <= 1) {
-            setIsComplete(true);
-            setIsRunning(false);
-            onComplete?.();
-            if (intervalRef.current) clearInterval(intervalRef.current);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else if (!isRunning && intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    } else if (secondsLeft === 0 && !isComplete) {
-      setIsComplete(true);
-      setIsRunning(false);
-      onComplete?.();
+    if (!isRunning) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
     }
+
+    // If resuming, ensure endTimeRef is updated based on current secondsLeft
+    if (endTimeRef.current === 0 || endTimeRef.current < Date.now()) {
+      endTimeRef.current = Date.now() + secondsLeft * 1000;
+    }
+
+    intervalRef.current = setInterval(() => {
+      const remaining = Math.max(
+        0,
+        Math.round((endTimeRef.current - Date.now()) / 1000)
+      );
+
+      setSecondsLeft(remaining);
+
+      if (remaining === 0) {
+        setIsRunning(false);
+        setIsComplete(true);
+        onComplete?.();
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      }
+    }, 250); // Update every 250ms for smoother UI and accuracy
 
     return () => {
       if (intervalRef.current) {
@@ -58,28 +66,41 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
         intervalRef.current = null;
       }
     };
-  }, [isRunning, secondsLeft, isComplete, onComplete]);
+  }, [isRunning, onComplete, secondsLeft]); // secondsLeft is here for initial endTimeRef update on resume
 
   const togglePause = useCallback(() => {
-    setIsRunning(prev => !prev);
-  }, []);
+    if (isRunning) {
+      // Pausing: calculate remaining time
+      const remaining = Math.max(
+        0,
+        Math.round((endTimeRef.current - Date.now()) / 1000)
+      );
+      setSecondsLeft(remaining);
+      setIsRunning(false);
+    } else {
+      // Resuming
+      endTimeRef.current = Date.now() + secondsLeft * 1000;
+      setIsRunning(true);
+    }
+  }, [isRunning, secondsLeft]);
 
   const resetTimer = useCallback(() => {
     setSecondsLeft(initialSeconds);
-    setIsRunning(true);
+    endTimeRef.current = Date.now() + initialSeconds * 1000;
     setIsComplete(false);
+    setIsRunning(true);
   }, [initialSeconds]);
 
   const skipTimer = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     setSecondsLeft(0);
-    setIsComplete(true);
     setIsRunning(false);
+    setIsComplete(true);
     onComplete?.();
   }, [onComplete]);
-
-  const adjustTime = useCallback((delta: number) => {
-    setSecondsLeft(prev => Math.max(0, prev + delta));
-  }, []);
 
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
