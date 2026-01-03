@@ -70,7 +70,11 @@ export default function WorkoutSessionPage() {
     if (wasJustCompleted) {
       // Get rest seconds from the exercise in the active session
       const exerciseRestSeconds = activeSession.exercises.find(ex => ex.id === exerciseId)?.restSeconds || 60;
-      setCurrentRestSeconds(exerciseRestSeconds);
+      
+      // Check if the completed set is the last set for this exercise
+      const isLastSet = updatedSet.setNumber === (currentExercise?.sets.length || 0);
+
+      setCurrentRestSeconds(isLastSet ? 60 : exerciseRestSeconds);
       setShowRestTimer(true);
       setRestTimerKey(prev => prev + 1); // Increment key to force RestTimer remount/reset
     }

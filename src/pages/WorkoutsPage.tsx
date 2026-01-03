@@ -139,8 +139,11 @@ export default function WorkoutsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Workouts</h1>
-          <p className="text-muted-foreground">Choose a workout to start training</p>
+          <h1 className="text-2xl font-bold text-foreground flex items-center">
+            <Dumbbell className="inline-block h-7 w-7 mr-2 text-primary" />
+            FitGutta
+          </h1>
+          <p className="text-muted-foreground">Your personalized fitness journey starts here.</p>
         </div>
         <Button onClick={() => navigate("/template/new")} className="gap-2">
           <Plus className="h-4 w-4" />
