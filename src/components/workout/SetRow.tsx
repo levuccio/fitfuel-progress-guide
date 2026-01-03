@@ -9,9 +9,10 @@ interface SetRowProps {
   set: SetLog;
   lastSetData?: { reps: number; weight: number };
   onUpdate: (set: SetLog) => void;
+  isAbsExercise?: boolean; // New prop to indicate if it's an abs exercise
 }
 
-export function SetRow({ set, lastSetData, onUpdate }: SetRowProps) {
+export function SetRow({ set, lastSetData, onUpdate, isAbsExercise = false }: SetRowProps) {
   const handleRepsChange = (value: string) => {
     const reps = parseInt(value) || 0;
     onUpdate({ ...set, reps });
@@ -27,7 +28,7 @@ export function SetRow({ set, lastSetData, onUpdate }: SetRowProps) {
   };
 
   const getComparison = () => {
-    if (!lastSetData || !set.completed) return null;
+    if (isAbsExercise || !lastSetData || !set.completed) return null; // Skip comparison for abs exercises
     
     const weightDiff = set.weight - lastSetData.weight;
     const repsDiff = set.reps - lastSetData.reps;
@@ -51,7 +52,7 @@ export function SetRow({ set, lastSetData, onUpdate }: SetRowProps) {
         {set.setNumber}
       </span>
       
-      <div className="flex-1 grid grid-cols-2 gap-2">
+      <div className={cn("flex-1 grid gap-2", isAbsExercise ? "grid-cols-1" : "grid-cols-2")}>
         <div className="relative">
           <Input
             type="number"
@@ -65,22 +66,24 @@ export function SetRow({ set, lastSetData, onUpdate }: SetRowProps) {
             reps
           </span>
         </div>
-        <div className="relative">
-          <Input
-            type="number"
-            inputMode="decimal"
-            placeholder="Weight"
-            value={set.weight || ""}
-            onChange={(e) => handleWeightChange(e.target.value)}
-            className="h-10 text-center pr-6"
-          />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-            kg
-          </span>
-        </div>
+        {!isAbsExercise && ( // Conditionally render weight input
+          <div className="relative">
+            <Input
+              type="number"
+              inputMode="decimal"
+              placeholder="Weight"
+              value={set.weight || ""}
+              onChange={(e) => handleWeightChange(e.target.value)}
+              className="h-10 text-center pr-6"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              kg
+            </span>
+          </div>
+        )}
       </div>
 
-      {comparison && (
+      {comparison && !isAbsExercise && ( // Conditionally render comparison icon
         <div className="w-6">
           {comparison === "improved" && (
             <TrendingUp className="h-4 w-4 text-success" />

@@ -111,6 +111,10 @@ export default function WorkoutSessionPage() {
           const isExpanded = expandedExercise === exercise.id;
           const exerciseCompleted = exercise.sets.every(s => s.completed);
           const lastData = lastSessionData?.[exercise.exerciseId];
+          // Determine if the current exercise is an abs/core exercise
+          const isAbsExercise = exercise.exercise.targetMuscles.some(
+            (muscle) => ["Abs", "Core", "Obliques", "Lower Abs"].includes(muscle)
+          );
 
           return (
             <Card key={exercise.id} className={cn("glass-card", exerciseCompleted && "border-success/50")}>
@@ -128,16 +132,22 @@ export default function WorkoutSessionPage() {
               </CardHeader>
               {isExpanded && (
                 <CardContent className="p-4 pt-0 space-y-2">
-                  {/* Exercise Progress Chart */}
-                  <ExerciseProgressChart exerciseId={exercise.exerciseId} />
+                  {/* Exercise Progress Chart - only show if not an abs exercise */}
+                  {!isAbsExercise && <ExerciseProgressChart exerciseId={exercise.exerciseId} />}
 
-                  {lastData && (
+                  {lastData && !isAbsExercise && ( // Only show last data if not an abs exercise
                     <p className="text-xs text-muted-foreground mb-2">
                       Last: {lastData.sets.map(s => `${s.weight}kg×${s.reps}`).join(", ")}
                     </p>
                   )}
                   {exercise.sets.map((set, idx) => (
-                    <SetRow key={set.id} set={set} lastSetData={lastData?.sets[idx]} onUpdate={(s) => handleSetUpdate(exercise.id, s)} />
+                    <SetRow
+                      key={set.id}
+                      set={set}
+                      lastSetData={lastData?.sets[idx]}
+                      onUpdate={(s) => handleSetUpdate(exercise.id, s)}
+                      isAbsExercise={isAbsExercise} // Pass the prop
+                    />
                   ))}
                 </CardContent>
               )}
