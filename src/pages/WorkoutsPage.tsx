@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2 } from "lucide-react";
@@ -84,7 +86,7 @@ export default function WorkoutsPage() {
         />
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 grid-cols-2"> {/* Changed to grid-cols-2 for smaller screens */}
         {templates.map((template) => (
           <Card key={template.id} className="glass-card group hover:border-primary/50 transition-all">
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">

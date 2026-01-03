@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
@@ -6,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Pause, Play, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { SetRow } from "@/components/workout/SetRow";
-import { RestTimer } from "@/components/workout/RestTimer";
+import { RestTimer } from "@/components/workout/RestTimer"; // Re-using the existing RestTimer
 import { ExerciseLog, SetLog } from "@/types/workout";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +21,7 @@ export default function WorkoutSessionPage() {
 
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [showRestTimer, setShowRestTimer] = useState(false);
-  const [restSeconds, setRestSeconds] = useState(180);
+  const [restSeconds, setRestSeconds] = useState(180); // Default rest seconds
   const [elapsedTime, setElapsedTime] = useState(0);
 
   const template = templates.find(t => t.id === templateId);
@@ -30,7 +32,7 @@ export default function WorkoutSessionPage() {
     if (!activeSession || activeSession.templateId !== templateId) {
       startSession(template);
     }
-  }, [template, templateId]);
+  }, [template, templateId, activeSession, startSession]);
 
   useEffect(() => {
     if (!activeSession || activeSession.status !== "in_progress") return;
@@ -55,7 +57,10 @@ export default function WorkoutSessionPage() {
   };
 
   const handleSetUpdate = (exerciseId: string, updatedSet: SetLog) => {
-    const wasJustCompleted = updatedSet.completed && !activeSession.exercises.find(e => e.id === exerciseId)?.sets.find(s => s.id === updatedSet.id)?.completed;
+    const currentExerciseLog = activeSession.exercises.find(e => e.id === exerciseId);
+    if (!currentExerciseLog) return;
+
+    const wasJustCompleted = updatedSet.completed && !currentExerciseLog.sets.find(s => s.id === updatedSet.id)?.completed;
     
     const updatedExercises = activeSession.exercises.map(ex => 
       ex.id === exerciseId 
@@ -65,11 +70,15 @@ export default function WorkoutSessionPage() {
     updateActiveSession({ ...activeSession, exercises: updatedExercises });
 
     if (wasJustCompleted) {
-      const exercise = activeSession.exercises.find(e => e.id === exerciseId);
-      if (exercise) {
-        setRestSeconds(exercise.restSeconds);
-        setShowRestTimer(true);
+      // Check if this was the last set of the current exercise
+      const isLastSetOfExercise = updatedSet.setNumber === currentExerciseLog.sets.length;
+      
+      if (isLastSetOfExercise) {
+        setRestSeconds(60); // 1 minute rest after the last set of an exercise
+      } else {
+        setRestSeconds(currentExerciseLog.restSeconds); // User-defined rest for other sets
       }
+      setShowRestTimer(true);
     }
   };
 
