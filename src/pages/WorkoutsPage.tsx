@@ -80,10 +80,6 @@ export default function WorkoutsPage() {
     setDeleteDialogOpen(false);
   };
 
-  const getTotalSets = (template: WorkoutTemplate) => {
-    return template.exercises.reduce((acc, ex) => acc + ex.sets, 0);
-  };
-
   const getEstimatedTime = (template: WorkoutTemplate) => {
     const totalRestSeconds = template.exercises.reduce(
       (acc, ex) => acc + (ex.sets * ex.restSeconds),
@@ -167,7 +163,7 @@ export default function WorkoutsPage() {
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="grid gap-4 sm:grid-cols-2"
+              className="grid grid-cols-2 gap-4" {/* Changed to grid-cols-2 for all screen sizes */}
             >
               {templates.map((template, index) => (
                 <Draggable key={template.id} draggableId={template.id} index={index}>
@@ -223,9 +219,7 @@ export default function WorkoutsPage() {
                             <Dumbbell className="h-4 w-4" />
                             <span>{template.exercises.length} exercises</span>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <span>{getTotalSets(template)} sets</span>
-                          </div>
+                          {/* Removed sets info to compress card size */}
                           <div className="flex items-center gap-1.5">
                             <Clock className="h-4 w-4" />
                             <span>~{getEstimatedTime(template)}</span>

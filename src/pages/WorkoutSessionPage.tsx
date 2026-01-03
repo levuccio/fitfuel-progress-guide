@@ -20,6 +20,7 @@ export default function WorkoutSessionPage() {
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [restTimerKey, setRestTimerKey] = useState(0); // Key to force remount/reset of RestTimer
+  const [currentRestSeconds, setCurrentRestSeconds] = useState(60); // Default to 60 seconds
   const [elapsedTime, setElapsedTime] = useState(0);
 
   const template = templates.find(t => t.id === templateId);
@@ -67,7 +68,9 @@ export default function WorkoutSessionPage() {
     updateActiveSession({ ...activeSession, exercises: updatedExercises });
 
     if (wasJustCompleted) {
-      // Start a 60-second rest timer
+      // Get rest seconds from the exercise in the active session
+      const exerciseRestSeconds = activeSession.exercises.find(ex => ex.id === exerciseId)?.restSeconds || 60;
+      setCurrentRestSeconds(exerciseRestSeconds);
       setShowRestTimer(true);
       setRestTimerKey(prev => prev + 1); // Increment key to force RestTimer remount/reset
     }
@@ -100,7 +103,7 @@ export default function WorkoutSessionPage() {
       </div>
 
       {showRestTimer && (
-        <RestTimer key={restTimerKey} initialSeconds={60} onComplete={() => setShowRestTimer(false)} />
+        <RestTimer key={restTimerKey} initialSeconds={currentRestSeconds} onComplete={() => setShowRestTimer(false)} />
       )}
 
       <div className="space-y-3">
