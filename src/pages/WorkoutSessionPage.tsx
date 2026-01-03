@@ -18,7 +18,7 @@ export default function WorkoutSessionPage() {
   const { templates, activeSession, startSession, updateActiveSession, completeSession, pauseSession, getLastSessionData } = useWorkoutData();
 
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
-  const [showRestTimer, setShowRestTimer] = useState(false);
+  const [restTimerForExerciseId, setRestTimerForExerciseId] = useState<string | null>(null); // Tracks which exercise should show the timer
   const [restTimerKey, setRestTimerKey] = useState(0); // Key to force remount/reset of RestTimer
   const [currentRestSeconds, setCurrentRestSeconds] = useState(60); // Default to 60 seconds
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -75,7 +75,7 @@ export default function WorkoutSessionPage() {
       const isLastSet = updatedSet.setNumber === (currentExercise?.sets.length || 0);
 
       setCurrentRestSeconds(isLastSet ? 60 : exerciseRestSeconds);
-      setShowRestTimer(true);
+      setRestTimerForExerciseId(exerciseId); // Set timer for this exercise
       setRestTimerKey(prev => prev + 1); // Increment key to force RestTimer remount/reset
     }
   };
@@ -106,10 +106,6 @@ export default function WorkoutSessionPage() {
         <Progress value={progress} className="h-2" />
       </div>
 
-      {showRestTimer && (
-        <RestTimer key={restTimerKey} initialSeconds={currentRestSeconds} onComplete={() => setShowRestTimer(false)} />
-      )}
-
       <div className="space-y-3">
         {activeSession.exercises.map((exercise) => {
           const isExpanded = expandedExercise === exercise.id;
@@ -129,7 +125,7 @@ export default function WorkoutSessionPage() {
                     <p className="text-sm text-muted-foreground">{exercise.targetSets} × {exercise.targetReps}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {exerciseCompleted && <Check className="h-5 w-5 text-success" />}
+                    {exerciseCompleted && <Check className="h-5 w-5" />}
                     {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                   </div>
                 </div>
@@ -153,6 +149,13 @@ export default function WorkoutSessionPage() {
                       isAbsExercise={isAbsExercise} // Pass the prop
                     />
                   ))}
+                  {restTimerForExerciseId === exercise.id && (
+                    <RestTimer 
+                      key={restTimerKey} 
+                      initialSeconds={currentRestSeconds} 
+                      onComplete={() => setRestTimerForExerciseId(null)} // Hide timer when complete
+                    />
+                  )}
                 </CardContent>
               )}
             </Card>
