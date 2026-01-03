@@ -86,9 +86,9 @@ export default function WorkoutsPage() {
         />
       )}
 
-      <div className="grid gap-4 grid-cols-2"> {/* Changed to grid-cols-2 for smaller screens */}
+      <div className="grid gap-4 grid-cols-2">
         {templates.map((template) => (
-          <Card key={template.id} className="glass-card group hover:border-primary/50 transition-all">
+          <Card key={template.id} className="glass-card group hover:border-primary/50 transition-all min-w-0">
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
               <div className="space-y-1">
                 {template.dayOfWeek && (
