@@ -1,30 +1,18 @@
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
 import { formatDistanceToNow, format } from "date-fns";
-import { Clock, CheckCircle, XCircle, Dumbbell, Pencil } from "lucide-react";
-import { formatDurationShort } from "@/lib/utils"; // Import the new utility
-import { useState } from "react";
-import { toast } from "sonner"; // Using sonner for toasts
+import { Clock, CheckCircle, XCircle, Dumbbell } from "lucide-react";
 
 export default function HistoryPage() {
-  const { sessions, updateSessionDuration } = useWorkoutData();
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
-  const [newDurationMinutes, setNewDurationMinutes] = useState<number>(0);
+  const { sessions } = useWorkoutData();
   
   const completedSessions = sessions.filter(s => s.status === "completed");
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const getCompletedSets = (session: typeof sessions[0]) => {
     return session.exercises.reduce(
@@ -35,23 +23,6 @@ export default function HistoryPage() {
 
   const getTotalSets = (session: typeof sessions[0]) => {
     return session.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
-  };
-
-  const handleEditDuration = (sessionId: string, currentDurationSeconds: number | undefined) => {
-    setEditingSessionId(sessionId);
-    setNewDurationMinutes(Math.round((currentDurationSeconds || 0) / 60));
-    setIsEditDialogOpen(true);
-  };
-
-  const handleSaveDuration = () => {
-    if (editingSessionId) {
-      const newDurationSeconds = newDurationMinutes * 60;
-      updateSessionDuration(editingSessionId, newDurationSeconds);
-      toast.success("Workout duration updated!");
-      setIsEditDialogOpen(false);
-      setEditingSessionId(null);
-      setNewDurationMinutes(0);
-    }
   };
 
   if (completedSessions.length === 0) {
@@ -106,15 +77,7 @@ export default function HistoryPage() {
                 <div className="flex items-center gap-4 mt-3 text-sm">
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Clock className="h-4 w-4" />
-                    <span>{session.totalDuration ? formatDurationShort(session.totalDuration) : "—"}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6" 
-                      onClick={() => handleEditDuration(session.id, session.totalDuration)}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
+                    <span>{session.totalDuration ? formatDuration(session.totalDuration) : "—"}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     {completionRate === 100 ? (
@@ -148,39 +111,6 @@ export default function HistoryPage() {
           );
         })}
       </div>
-
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Workout Duration</DialogTitle>
-            <DialogDescription>
-              Adjust the total duration for this workout session in minutes.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="duration" className="text-right">
-                Duration
-              </Label>
-              <Input
-                id="duration"
-                type="number"
-                min={0}
-                value={newDurationMinutes}
-                onChange={(e) => setNewDurationMinutes(parseInt(e.target.value) || 0)}
-                className="col-span-3"
-              />
-              <span className="col-span-1 text-muted-foreground">minutes</span>
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleSaveDuration}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

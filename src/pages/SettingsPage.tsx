@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Download, Info, RotateCcw } from "lucide-react";
+import { Trash2, Download, Info } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,13 +12,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner"; // Using sonner for toasts
-import { useWorkoutData } from "@/hooks/useWorkoutData";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
-  const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
-  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const { restoreFactorySettings } = useWorkoutData();
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const handleExportData = () => {
     const data = {
@@ -37,36 +35,27 @@ export default function SettingsPage() {
     a.click();
     URL.revokeObjectURL(url);
 
-    toast.success("Data exported", {
+    toast({
+      title: "Data exported",
       description: "Your data has been downloaded as a JSON file.",
     });
   };
 
-  const handleClearAllData = () => {
+  const handleClearData = () => {
     localStorage.removeItem("fittrack_templates");
     localStorage.removeItem("fittrack_sessions");
     localStorage.removeItem("fittrack_exercises");
     localStorage.removeItem("fittrack_recipes");
     localStorage.removeItem("fittrack_active_session");
     
-    setClearAllDialogOpen(false);
+    setClearDialogOpen(false);
     
-    toast.success("Data cleared", {
-      description: "All your data has been deleted. Refreshing app...",
+    toast({
+      title: "Data cleared",
+      description: "All your data has been deleted. Refresh to see changes.",
     });
 
-    // Reload after a short delay to allow toast to be seen
-    setTimeout(() => window.location.reload(), 500);
-  };
-
-  const handleRestoreFactorySettings = () => {
-    restoreFactorySettings();
-    setRestoreDialogOpen(false);
-    toast.success("Factory settings restored", {
-      description: "All data has been reset to default. Refreshing app...",
-    });
-    // Reload after a short delay to allow toast to be seen
-    setTimeout(() => window.location.reload(), 500);
+    window.location.reload();
   };
 
   return (
@@ -94,27 +83,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card border-warning/50">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2 text-warning">
-              <RotateCcw className="h-5 w-5" />
-              Restore Factory Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Reset all your custom data (templates, sessions, exercises, recipes) to the app's original default settings.
-            </p>
-            <Button
-              onClick={() => setRestoreDialogOpen(true)}
-              variant="outline"
-              className="text-warning border-warning hover:bg-warning/10"
-            >
-              Restore Defaults
-            </Button>
-          </CardContent>
-        </Card>
-
         <Card className="glass-card border-destructive/50">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2 text-destructive">
@@ -127,7 +95,7 @@ export default function SettingsPage() {
               Permanently delete all your data. This action cannot be undone.
             </p>
             <Button
-              onClick={() => setClearAllDialogOpen(true)}
+              onClick={() => setClearDialogOpen(true)}
               variant="destructive"
             >
               Clear All Data
@@ -155,7 +123,7 @@ export default function SettingsPage() {
         </Card>
       </div>
 
-      <AlertDialog open={clearAllDialogOpen} onOpenChange={setClearAllDialogOpen}>
+      <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Clear All Data</AlertDialogTitle>
@@ -167,30 +135,10 @@ export default function SettingsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleClearAllData}
+              onClick={handleClearData}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete Everything
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Restore Factory Settings</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to restore factory settings? This will delete all your custom templates, workout sessions, custom exercises, and recipes, replacing them with the app's original defaults.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleRestoreFactorySettings}
-              className="bg-warning text-warning-foreground hover:bg-warning/90"
-            >
-              Restore Defaults
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
