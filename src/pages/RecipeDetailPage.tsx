@@ -10,9 +10,9 @@ export default function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { recipes } = useRecipeData();
-  const [servings, setServings] = useState(1);
-
+  
   const recipe = recipes.find(r => r.id === id);
+  const [servings, setServings] = useState(recipe?.servings || 1); // Initialize with recipe's servings or 1
 
   if (!recipe) {
     return (
@@ -27,15 +27,15 @@ export default function RecipeDetailPage() {
 
   const scaledIngredients = recipe.ingredients.map(ing => ({
     ...ing,
-    amount: ing.amount * servings,
+    amount: ing.amount * (servings / recipe.servings), // Scale based on original servings
   }));
 
   const scaledMacros = {
-    calories: recipe.macrosPerServing.calories * servings,
-    protein: recipe.macrosPerServing.protein * servings,
-    carbs: recipe.macrosPerServing.carbs * servings,
-    fat: recipe.macrosPerServing.fat * servings,
-    fiber: (recipe.macrosPerServing.fiber || 0) * servings,
+    calories: recipe.macrosPerServing.calories * (servings / recipe.servings),
+    protein: recipe.macrosPerServing.protein * (servings / recipe.servings),
+    carbs: recipe.macrosPerServing.carbs * (servings / recipe.servings),
+    fat: recipe.macrosPerServing.fat * (servings / recipe.servings),
+    fiber: (recipe.macrosPerServing.fiber || 0) * (servings / recipe.servings),
   };
 
   return (
@@ -80,23 +80,23 @@ export default function RecipeDetailPage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div className="p-3 bg-secondary/50 rounded-lg text-center">
-              <div className="text-lg font-bold text-foreground">{scaledMacros.calories}</div>
+              <div className="text-lg font-bold text-foreground">{scaledMacros.calories.toFixed(0)}</div>
               <div className="text-xs text-muted-foreground">Calories</div>
             </div>
             <div className="p-3 bg-secondary/50 rounded-lg text-center">
-              <div className="text-lg font-bold text-foreground">{scaledMacros.protein}g</div>
+              <div className="text-lg font-bold text-foreground">{scaledMacros.protein.toFixed(1)}g</div>
               <div className="text-xs text-muted-foreground">Protein</div>
             </div>
             <div className="p-3 bg-secondary/50 rounded-lg text-center">
-              <div className="text-lg font-bold text-foreground">{scaledMacros.carbs}g</div>
+              <div className="text-lg font-bold text-foreground">{scaledMacros.carbs.toFixed(1)}g</div>
               <div className="text-xs text-muted-foreground">Carbs</div>
             </div>
             <div className="p-3 bg-secondary/50 rounded-lg text-center">
-              <div className="text-lg font-bold text-foreground">{scaledMacros.fat}g</div>
+              <div className="text-lg font-bold text-foreground">{scaledMacros.fat.toFixed(1)}g</div>
               <div className="text-xs text-muted-foreground">Fat</div>
             </div>
             <div className="p-3 bg-secondary/50 rounded-lg text-center">
-              <div className="text-lg font-bold text-foreground">{scaledMacros.fiber}g</div>
+              <div className="text-lg font-bold text-foreground">{scaledMacros.fiber.toFixed(1)}g</div>
               <div className="text-xs text-muted-foreground">Fiber</div>
             </div>
           </div>

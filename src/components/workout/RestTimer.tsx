@@ -15,11 +15,12 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
   const [isRunning, setIsRunning] = useState(autoStart);
   const [isComplete, setIsComplete] = useState(false);
 
-  const reset = useCallback(() => {
+  // Reset timer when initialSeconds changes
+  useEffect(() => {
     setSeconds(initialSeconds);
-    setIsRunning(true);
+    setIsRunning(autoStart);
     setIsComplete(false);
-  }, [initialSeconds]);
+  }, [initialSeconds, autoStart]);
 
   useEffect(() => {
     if (!isRunning || isComplete) return;
@@ -96,7 +97,11 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
             {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
 
-          <Button variant="outline" size="icon" onClick={reset}>
+          <Button variant="outline" size="icon" onClick={() => {
+            setSeconds(initialSeconds);
+            setIsRunning(true);
+            setIsComplete(false);
+          }}>
             <RotateCcw className="h-4 w-4" />
           </Button>
 

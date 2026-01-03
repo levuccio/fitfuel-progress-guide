@@ -12,14 +12,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { useWorkoutData } from "@/hooks/useWorkoutData"; // Import useWorkoutData
+import { toast } from "sonner"; // Using sonner for toasts
+import { useWorkoutData } from "@/hooks/useWorkoutData";
 
 export default function SettingsPage() {
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
-  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false); // New state for restore dialog
-  const { toast } = useToast();
-  const { restoreFactorySettings } = useWorkoutData(); // Get restore function
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const { restoreFactorySettings } = useWorkoutData();
 
   const handleExportData = () => {
     const data = {
@@ -38,8 +37,7 @@ export default function SettingsPage() {
     a.click();
     URL.revokeObjectURL(url);
 
-    toast({
-      title: "Data exported",
+    toast.success("Data exported", {
       description: "Your data has been downloaded as a JSON file.",
     });
   };
@@ -53,22 +51,22 @@ export default function SettingsPage() {
     
     setClearAllDialogOpen(false);
     
-    toast({
-      title: "Data cleared",
-      description: "All your data has been deleted. Refresh to see changes.",
+    toast.success("Data cleared", {
+      description: "All your data has been deleted. Refreshing app...",
     });
 
-    window.location.reload();
+    // Reload after a short delay to allow toast to be seen
+    setTimeout(() => window.location.reload(), 500);
   };
 
   const handleRestoreFactorySettings = () => {
     restoreFactorySettings();
     setRestoreDialogOpen(false);
-    toast({
-      title: "Factory settings restored",
-      description: "All data has been reset to default. Refresh to see changes.",
+    toast.success("Factory settings restored", {
+      description: "All data has been reset to default. Refreshing app...",
     });
-    window.location.reload();
+    // Reload after a short delay to allow toast to be seen
+    setTimeout(() => window.location.reload(), 500);
   };
 
   return (
@@ -96,7 +94,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card border-warning/50"> {/* Changed to warning for restore */}
+        <Card className="glass-card border-warning/50">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2 text-warning">
               <RotateCcw className="h-5 w-5" />
