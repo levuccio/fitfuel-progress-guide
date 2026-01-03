@@ -163,7 +163,7 @@ export default function WorkoutsPage() {
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="grid grid-cols-2 gap-4" {/* Changed to grid-cols-2 for all screen sizes */}
+              className="grid grid-cols-2 gap-4" /* Changed to grid-cols-2 for all screen sizes */
             >
               {templates.map((template, index) => (
                 <Draggable key={template.id} draggableId={template.id} index={index}>
