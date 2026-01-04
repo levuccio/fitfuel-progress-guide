@@ -17,10 +17,42 @@ export function useActivityData() {
     }));
   }, [setActivityData]);
 
+  const updateActivityLogDuration = useCallback((logId: string, newDurationMinutes: number) => {
+    setActivityData(prev => ({
+      ...prev,
+      activityLogs: prev.activityLogs.map(log =>
+        log.id === logId ? { ...log, durationMinutes: newDurationMinutes } : log
+      ),
+    }));
+  }, [setActivityData]);
+
+  const deleteActivityLog = useCallback((logId: string) => {
+    setActivityData(prev => ({
+      ...prev,
+      activityLogs: prev.activityLogs.filter(log => log.id !== logId),
+    }));
+  }, [setActivityData]);
+
   const addSquashGame = useCallback((game: SquashGame) => {
     setActivityData(prev => ({
       ...prev,
       squashGames: [...prev.squashGames, game],
+    }));
+  }, [setActivityData]);
+
+  const updateSquashGameDuration = useCallback((gameId: string, newDurationMinutes: number) => {
+    setActivityData(prev => ({
+      ...prev,
+      squashGames: prev.squashGames.map(game =>
+        game.id === gameId ? { ...game, durationMinutes: newDurationMinutes } : game
+      ),
+    }));
+  }, [setActivityData]);
+
+  const deleteSquashGame = useCallback((gameId: string) => {
+    setActivityData(prev => ({
+      ...prev,
+      squashGames: prev.squashGames.filter(game => game.id !== gameId),
     }));
   }, [setActivityData]);
 
@@ -32,7 +64,11 @@ export function useActivityData() {
     activityLogs: activityData.activityLogs,
     squashGames: activityData.squashGames,
     addActivityLog,
+    updateActivityLogDuration,
+    deleteActivityLog,
     addSquashGame,
+    updateSquashGameDuration,
+    deleteSquashGame,
     restoreActivityFactorySettings,
   };
 }
