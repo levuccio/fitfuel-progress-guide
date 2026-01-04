@@ -1,5 +1,5 @@
 import { useLocalStorage } from "./useLocalStorage";
-import { WorkoutTemplate, WorkoutSession, Exercise, ExerciseLog, SetLog } from "@/types/workout";
+import { WorkoutTemplate, WorkoutSession, Exercise } from "@/types/workout";
 import { defaultTemplates } from "@/data/templates";
 import { defaultExercises } from "@/data/exercises";
 import { defaultRecipes } from "@/data/recipes";
@@ -158,21 +158,15 @@ export function useWorkoutData() {
       }),
     };
     setActiveSession(session);
-    console.log("startSession: activeSession set to", session);
     return session;
   }, [setActiveSession, allExercises, getLastSessionData]);
 
   const updateActiveSession = useCallback((session: WorkoutSession) => {
     setActiveSession(session);
-    console.log("updateActiveSession: activeSession set to", session);
   }, [setActiveSession]);
 
   const completeSession = useCallback(() => {
-    if (!activeSession) {
-      console.log("completeSession: activeSession is null, returning.");
-      return;
-    }
-    console.log("completeSession: activeSession before completion", activeSession);
+    if (!activeSession) return;
     
     const completedSession: WorkoutSession = {
       ...activeSession,
@@ -183,29 +177,18 @@ export function useWorkoutData() {
       ),
     };
     
-    setSessions(prev => {
-      console.log("setSessions: Adding completed session:", completedSession);
-      const newSessions = [completedSession, ...prev];
-      console.log("setSessions: New sessions array:", newSessions);
-      return newSessions;
-    });
+    setSessions(prev => [completedSession, ...prev]);
     setActiveSession(null);
-    console.log("completeSession: activeSession set to null");
     
     return completedSession;
   }, [activeSession, setSessions, setActiveSession]);
 
   const discardSession = useCallback(() => {
-    console.log("discardSession: activeSession set to null");
     setActiveSession(null);
   }, [setActiveSession]);
 
   const pauseSession = useCallback(() => {
-    if (!activeSession) {
-      console.log("pauseSession: activeSession is null, returning.");
-      return;
-    }
-    console.log("pauseSession: activeSession status set to paused", activeSession.id);
+    if (!activeSession) return;
     setActiveSession({ ...activeSession, status: "paused" });
   }, [activeSession, setActiveSession]);
 
@@ -221,41 +204,6 @@ export function useWorkoutData() {
           ? { ...session, totalDuration: newDurationSeconds }
           : session
       )
-    );
-  }, [setSessions]);
-
-  const updateSetLogInSession = useCallback((sessionId: string, exerciseLogId: string, updatedSet: SetLog) => {
-    setSessions(prevSessions =>
-      prevSessions.map(session =>
-        session.id === sessionId
-          ? {
-              ...session,
-              exercises: session.exercises.map(exLog =>
-                exLog.id === exerciseLogId
-                  ? {
-                      ...exLog,
-                      sets: exLog.sets.map(set =>
-                        set.id === updatedSet.id ? updatedSet : set
-                      ),
-                    }
-                  : exLog
-              ),
-            }
-          : session
-      )
-    );
-  }, [setSessions]);
-
-  const deleteExerciseLogFromSession = useCallback((sessionId: string, exerciseLogId: string) => {
-    setSessions(prevSessions =>
-      prevSessions.map(session =>
-        session.id === sessionId
-          ? {
-              ...session,
-              exercises: session.exercises.filter(exLog => exLog.id !== exerciseLogId),
-            }
-          : session
-      ).filter(session => session.exercises.length > 0) // Remove session if no exercises left
     );
   }, [setSessions]);
 
@@ -282,14 +230,12 @@ export function useWorkoutData() {
     completeSession,
     discardSession,
     pauseSession,
-    resumeSession, // Now correctly exposed
+    resumeSession,
     getLastSessionData,
     updateTemplateOrder,
     getTemplateById,
     restoreFactorySettings,
     getExerciseHistoryData,
-    updateSessionDuration,
-    updateSetLogInSession,
-    deleteExerciseLogFromSession,
+    updateSessionDuration, // Expose the new function
   };
 }

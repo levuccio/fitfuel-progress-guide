@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { Button } from "@/components/ui/button";
@@ -23,44 +23,15 @@ export default function WorkoutSessionPage() {
   const [currentRestSeconds, setCurrentRestSeconds] = useState(60); // Default to 60 seconds
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  // Ref to track if a session has been explicitly started by this component instance
-  const hasStartedSessionRef = useRef(false);
-
   const template = templates.find(t => t.id === templateId);
   const lastSessionData = templateId ? getLastSessionData(templateId) : null;
 
   useEffect(() => {
-    console.log("WorkoutSessionPage useEffect: templateId", templateId, "activeSession", activeSession, "hasStartedSessionRef.current", hasStartedSessionRef.current);
-
-    if (!template) {
-      console.log("WorkoutSessionPage useEffect: Template not found, navigating to /");
-      navigate("/");
-      return;
-    }
-
-    // If there's no active session AND this component hasn't explicitly started one yet,
-    // then start a new session. This prevents re-starting after completion.
-    if (!activeSession && !hasStartedSessionRef.current) {
-      console.log("WorkoutSessionPage useEffect: No active session and not yet started, calling startSession.");
+    if (!template) return;
+    if (!activeSession || activeSession.templateId !== templateId) {
       startSession(template);
-      hasStartedSessionRef.current = true; // Mark that this instance started a session
     }
-    // If there IS an active session, but it's for a different template,
-    // pause the old one and start a new one.
-    else if (activeSession && activeSession.templateId !== templateId) {
-      console.log("WorkoutSessionPage useEffect: Active session for different template. Pausing old, starting new.");
-      pauseSession();
-      startSession(template);
-      hasStartedSessionRef.current = true; // Mark that this instance started a session
-    }
-    // If activeSession exists and activeSession.templateId === templateId, do nothing.
-
-    // Cleanup function: reset the ref when component unmounts
-    return () => {
-      console.log("WorkoutSessionPage useEffect cleanup: Resetting hasStartedSessionRef.current to false.");
-      hasStartedSessionRef.current = false;
-    };
-  }, [template, templateId, activeSession, startSession, navigate, pauseSession]);
+  }, [template, templateId, activeSession, startSession]);
 
   useEffect(() => {
     if (!activeSession || activeSession.status !== "in_progress") return;
@@ -71,7 +42,7 @@ export default function WorkoutSessionPage() {
   }, [activeSession]);
 
   if (!template || !activeSession) {
-    return <div className="p-4">Loading workout session...</div>;
+    return <div className="p-4">Loading...</div>;
   }
 
   const totalSets = activeSession.exercises.reduce((a, e) => a + e.sets.length, 0);
