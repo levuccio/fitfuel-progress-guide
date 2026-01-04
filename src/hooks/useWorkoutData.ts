@@ -209,6 +209,11 @@ export function useWorkoutData() {
     setActiveSession({ ...activeSession, status: "paused" });
   }, [activeSession, setActiveSession]);
 
+  const resumeSession = useCallback(() => {
+    if (!activeSession) return;
+    setActiveSession({ ...activeSession, status: "in_progress" });
+  }, [activeSession, setActiveSession]);
+
   const updateSessionDuration = useCallback((sessionId: string, newDurationSeconds: number) => {
     setSessions(prevSessions =>
       prevSessions.map(session =>
@@ -277,14 +282,14 @@ export function useWorkoutData() {
     completeSession,
     discardSession,
     pauseSession,
-    resumeSession,
+    resumeSession, // Now correctly exposed
     getLastSessionData,
     updateTemplateOrder,
     getTemplateById,
     restoreFactorySettings,
     getExerciseHistoryData,
     updateSessionDuration,
-    updateSetLogInSession, // Expose new function
-    deleteExerciseLogFromSession, // Expose new function
+    updateSetLogInSession,
+    deleteExerciseLogFromSession,
   };
 }
