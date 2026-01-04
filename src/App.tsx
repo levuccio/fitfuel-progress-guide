@@ -13,6 +13,8 @@ import WorkoutSessionPage from "./pages/WorkoutSessionPage";
 import TemplateBuilderPage from "./pages/TemplateBuilderPage";
 import RecipeDetailPage from "./pages/RecipeDetailPage";
 import NotFound from "./pages/NotFound";
+import PastWorkoutSessionPage from "./pages/PastWorkoutSessionPage"; // Import new page
+import StatisticsPage from "./pages/StatisticsPage"; // Import new page
 
 const queryClient = new QueryClient();
 
@@ -26,7 +28,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<WorkoutsPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/history/workout/:sessionId" element={<PastWorkoutSessionPage />} /> {/* New route */}
             <Route path="/progress" element={<ProgressPage />} />
+            <Route path="/statistics" element={<StatisticsPage />} /> {/* New route */}
             <Route path="/recipes" element={<RecipesPage />} />
             <Route path="/recipes/:id" element={<RecipeDetailPage />} />
             <Route path="/settings" element={<SettingsPage />} />

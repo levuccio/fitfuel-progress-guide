@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer, Bike, Gamepad } from "lucide-react";
+import { Plus, Play, Dumbbell, MoreVertical, Pencil, Trash2, Bike, Gamepad } from "lucide-react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { useActivityData } from "@/hooks/useActivityData"; // Import the new hook
 import { Button } from "@/components/ui/button";
@@ -24,66 +24,19 @@ import {
 import { PausedSessionBanner } from "@/components/workout/PausedSessionBanner";
 import { WorkoutTemplate } from "@/types/workout";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
-import { StatCircle } from "@/components/StatCircle";
-import { isAfter, startOfWeek, endOfWeek } from "date-fns";
-import { formatDurationShort } from "@/lib/utils";
 import { LogActivityDialog } from "@/components/activity/LogActivityDialog"; // Import new dialog
 import { LogSquashDialog } from "@/components/activity/LogSquashDialog"; // Import new dialog
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
-  const { templates, activeSession, deleteTemplate, resumeSession, discardSession, updateTemplateOrder, sessions } = useWorkoutData();
-  const { activityLogs, squashGames, addActivityLog, addSquashGame } = useActivityData(); // Use the new hook
+  const { templates, activeSession, deleteTemplate, resumeSession, discardSession, updateTemplateOrder } = useWorkoutData();
+  const { addActivityLog, addSquashGame } = useActivityData(); // Use the new hook
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<WorkoutTemplate | null>(null);
   const [isLogActivityDialogOpen, setIsLogActivityDialogOpen] = useState(false);
   const [activityTypeToLog, setActivityTypeToLog] = useState<"cycling" | "other">("cycling");
   const [isLogSquashDialogOpen, setIsLogSquashDialogOpen] = useState(false);
-
-  const completedSessions = sessions.filter(s => s.status === "completed");
-
-  // Combine all durations for total time calculations
-  const allDurationsInSeconds = [
-    ...completedSessions.map(s => s.totalDuration || 0),
-    ...activityLogs.map(log => log.durationMinutes * 60),
-    ...squashGames.map(game => game.durationMinutes * 60),
-  ];
-
-  const totalWorkoutTimeOverallSeconds = allDurationsInSeconds.reduce((acc, duration) => acc + duration, 0);
-  const totalWorkoutTimeOverall = formatDurationShort(totalWorkoutTimeOverallSeconds);
-
-  const getActivitiesThisWeek = (activities: { date: string; durationMinutes: number }[]) => {
-    const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-    return activities.filter(activity => {
-      const activityDate = new Date(activity.date);
-      return isAfter(activityDate, weekStart) && isAfter(weekEnd, activityDate);
-    });
-  };
-
-  const sessionsThisWeekCount = completedSessions.filter(session => {
-    const sessionDate = new Date(session.startTime);
-    const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-    return isAfter(sessionDate, weekStart) && isAfter(weekEnd, sessionDate);
-  }).length;
-
-  const activitiesThisWeekCount = getActivitiesThisWeek(activityLogs).length + getActivitiesThisWeek(squashGames).length;
-  const totalActivitiesThisWeek = sessionsThisWeekCount + activitiesThisWeekCount;
-
-  const totalSessionsAndActivities = completedSessions.length + activityLogs.length + squashGames.length;
-
-  const totalWorkoutTimeThisWeekSeconds = getActivitiesThisWeek(completedSessions.map(s => ({ date: s.startTime, durationMinutes: (s.totalDuration || 0) / 60 })))
-    .reduce((acc, s) => acc + s.durationMinutes * 60, 0) +
-    getActivitiesThisWeek(activityLogs).reduce((acc, log) => acc + log.durationMinutes * 60, 0) +
-    getActivitiesThisWeek(squashGames).reduce((acc, game) => acc + game.durationMinutes * 60, 0);
-  const totalWorkoutTimeThisWeek = formatDurationShort(totalWorkoutTimeThisWeekSeconds);
-
-  const aleksejWins = squashGames.filter(game => game.winner === "Aleksej").length;
-  const andreasWins = squashGames.filter(game => game.winner === "Andreas").length;
 
   const handleStartWorkout = (templateId: string) => {
     navigate(`/workout/${templateId}`);
@@ -298,55 +251,6 @@ export default function WorkoutsPage() {
           )}
         </Droppable>
       </DragDropContext>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-        <StatCircle
-          value={totalActivitiesThisWeek}
-          label="Activities this week"
-          icon={CalendarDays}
-          colorClass="bg-blue-500/10 text-blue-500"
-        />
-        <StatCircle
-          value={totalSessionsAndActivities}
-          label="Total activities"
-          icon={Activity}
-          colorClass="bg-purple-500/10 text-purple-500"
-        />
-        <StatCircle
-          value={totalWorkoutTimeThisWeek}
-          label="Time this week"
-          icon={Timer}
-          colorClass="bg-green-500/10 text-green-500"
-        />
-        <StatCircle
-          value={totalWorkoutTimeOverall}
-          label="Total time"
-          icon={Clock}
-          colorClass="bg-orange-500/10 text-orange-500"
-        />
-        {squashGames.length > 0 && (
-          <>
-            <StatCircle
-              value={squashGames.length}
-              label="Squash Games"
-              icon={Gamepad}
-              colorClass="bg-red-500/10 text-red-500"
-            />
-            <StatCircle
-              value={aleksejWins}
-              label="Aleksej Wins"
-              icon={Gamepad}
-              colorClass="bg-indigo-500/10 text-indigo-500"
-            />
-            <StatCircle
-              value={andreasWins}
-              label="Andreas Wins"
-              icon={Gamepad}
-              colorClass="bg-yellow-500/10 text-yellow-500"
-            />
-          </>
-        )}
-      </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
