@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer, Bike, Squash } from "lucide-react"; // Changed Tennis to Squash
+import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer, Bike, Gamepad } from "lucide-react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
-import { useActivityData } from "@/hooks/useActivityData";
+import { useActivityData } from "@/hooks/useActivityData"; // Import the new hook
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,13 +27,13 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautif
 import { StatCircle } from "@/components/StatCircle";
 import { isAfter, startOfWeek, endOfWeek } from "date-fns";
 import { formatDurationShort } from "@/lib/utils";
-import { LogActivityDialog } from "@/components/activity/LogActivityDialog";
-import { LogSquashDialog } from "@/components/activity/LogSquashDialog";
+import { LogActivityDialog } from "@/components/activity/LogActivityDialog"; // Import new dialog
+import { LogSquashDialog } from "@/components/activity/LogSquashDialog"; // Import new dialog
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
   const { templates, activeSession, deleteTemplate, resumeSession, discardSession, updateTemplateOrder, sessions } = useWorkoutData();
-  const { activityLogs, squashGames, addActivityLog, addSquashGame } = useActivityData();
+  const { activityLogs, squashGames, addActivityLog, addSquashGame } = useActivityData(); // Use the new hook
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<WorkoutTemplate | null>(null);
@@ -205,7 +205,7 @@ export default function WorkoutsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
-                <Squash className="h-4 w-4" /> {/* Changed Tennis to Squash */}
+                <Gamepad className="h-4 w-4" />
                 <span>Log your squash game</span>
               </div>
             </div>
@@ -329,19 +329,19 @@ export default function WorkoutsPage() {
             <StatCircle
               value={squashGames.length}
               label="Squash Games"
-              icon={Squash} // Changed Tennis to Squash
+              icon={Gamepad}
               colorClass="bg-red-500/10 text-red-500"
             />
             <StatCircle
               value={aleksejWins}
               label="Aleksej Wins"
-              icon={Squash} // Changed Tennis to Squash
+              icon={Gamepad}
               colorClass="bg-indigo-500/10 text-indigo-500"
             />
             <StatCircle
               value={andreasWins}
               label="Andreas Wins"
-              icon={Squash} // Changed Tennis to Squash
+              icon={Gamepad}
               colorClass="bg-yellow-500/10 text-yellow-500"
             />
           </>
