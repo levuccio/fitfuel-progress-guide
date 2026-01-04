@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer, Bike, Racket } from "lucide-react";
+import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer, Bike, Gamepad } from "lucide-react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { useActivityData } from "@/hooks/useActivityData"; // Import the new hook
 import { Button } from "@/components/ui/button";
@@ -205,7 +205,7 @@ export default function WorkoutsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
-                <Racket className="h-4 w-4" />
+                <Gamepad className="h-4 w-4" />
                 <span>Log your squash game</span>
               </div>
             </div>
@@ -329,19 +329,19 @@ export default function WorkoutsPage() {
             <StatCircle
               value={squashGames.length}
               label="Squash Games"
-              icon={Racket}
+              icon={Gamepad}
               colorClass="bg-red-500/10 text-red-500"
             />
             <StatCircle
               value={aleksejWins}
               label="Aleksej Wins"
-              icon={Racket}
+              icon={Gamepad}
               colorClass="bg-indigo-500/10 text-indigo-500"
             />
             <StatCircle
               value={andreasWins}
               label="Andreas Wins"
-              icon={Racket}
+              icon={Gamepad}
               colorClass="bg-yellow-500/10 text-yellow-500"
             />
           </>
