@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer } from "lucide-react";
+import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer, Bike, Racket } from "lucide-react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
+import { useActivityData } from "@/hooks/useActivityData"; // Import the new hook
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -25,43 +26,64 @@ import { WorkoutTemplate } from "@/types/workout";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { StatCircle } from "@/components/StatCircle";
 import { isAfter, startOfWeek, endOfWeek } from "date-fns";
-import { formatDurationShort } from "@/lib/utils"; // Import the new utility
+import { formatDurationShort } from "@/lib/utils";
+import { LogActivityDialog } from "@/components/activity/LogActivityDialog"; // Import new dialog
+import { LogSquashDialog } from "@/components/activity/LogSquashDialog"; // Import new dialog
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
   const { templates, activeSession, deleteTemplate, resumeSession, discardSession, updateTemplateOrder, sessions } = useWorkoutData();
+  const { activityLogs, squashGames, addActivityLog, addSquashGame } = useActivityData(); // Use the new hook
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<WorkoutTemplate | null>(null);
+  const [isLogActivityDialogOpen, setIsLogActivityDialogOpen] = useState(false);
+  const [activityTypeToLog, setActivityTypeToLog] = useState<"cycling" | "other">("cycling");
+  const [isLogSquashDialogOpen, setIsLogSquashDialogOpen] = useState(false);
 
   const completedSessions = sessions.filter(s => s.status === "completed");
 
-  const sessionsThisWeek = completedSessions.filter(session => {
+  // Combine all durations for total time calculations
+  const allDurationsInSeconds = [
+    ...completedSessions.map(s => s.totalDuration || 0),
+    ...activityLogs.map(log => log.durationMinutes * 60),
+    ...squashGames.map(game => game.durationMinutes * 60),
+  ];
+
+  const totalWorkoutTimeOverallSeconds = allDurationsInSeconds.reduce((acc, duration) => acc + duration, 0);
+  const totalWorkoutTimeOverall = formatDurationShort(totalWorkoutTimeOverallSeconds);
+
+  const getActivitiesThisWeek = (activities: { date: string; durationMinutes: number }[]) => {
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+    return activities.filter(activity => {
+      const activityDate = new Date(activity.date);
+      return isAfter(activityDate, weekStart) && isAfter(weekEnd, activityDate);
+    });
+  };
+
+  const sessionsThisWeekCount = completedSessions.filter(session => {
     const sessionDate = new Date(session.startTime);
     const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday as start of week
-    const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday as end of week
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
     return isAfter(sessionDate, weekStart) && isAfter(weekEnd, sessionDate);
   }).length;
 
-  const totalSessions = completedSessions.length;
+  const activitiesThisWeekCount = getActivitiesThisWeek(activityLogs).length + getActivitiesThisWeek(squashGames).length;
+  const totalActivitiesThisWeek = sessionsThisWeekCount + activitiesThisWeekCount;
 
-  const totalWorkoutTimeThisWeekSeconds = completedSessions
-    .filter(session => {
-      const sessionDate = new Date(session.startTime);
-      const now = new Date();
-      const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-      const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-      return isAfter(sessionDate, weekStart) && isAfter(weekEnd, sessionDate);
-    })
-    .reduce((acc, session) => acc + (session.totalDuration || 0), 0);
+  const totalSessionsAndActivities = completedSessions.length + activityLogs.length + squashGames.length;
+
+  const totalWorkoutTimeThisWeekSeconds = getActivitiesThisWeek(completedSessions.map(s => ({ date: s.startTime, durationMinutes: (s.totalDuration || 0) / 60 })))
+    .reduce((acc, s) => acc + s.durationMinutes * 60, 0) +
+    getActivitiesThisWeek(activityLogs).reduce((acc, log) => acc + log.durationMinutes * 60, 0) +
+    getActivitiesThisWeek(squashGames).reduce((acc, game) => acc + game.durationMinutes * 60, 0);
   const totalWorkoutTimeThisWeek = formatDurationShort(totalWorkoutTimeThisWeekSeconds);
 
-  const totalWorkoutTimeOverallSeconds = completedSessions.reduce(
-    (acc, session) => acc + (session.totalDuration || 0),
-    0
-  );
-  const totalWorkoutTimeOverall = formatDurationShort(totalWorkoutTimeOverallSeconds);
-
+  const aleksejWins = squashGames.filter(game => game.winner === "Aleksej").length;
+  const andreasWins = squashGames.filter(game => game.winner === "Andreas").length;
 
   const handleStartWorkout = (templateId: string) => {
     navigate(`/workout/${templateId}`);
@@ -80,49 +102,6 @@ export default function WorkoutsPage() {
     setDeleteDialogOpen(false);
   };
 
-  // The getEstimatedTime function is no longer needed for display on the card,
-  // but keeping it here in case it's used elsewhere or for future features.
-  const getEstimatedTime = (template: WorkoutTemplate) => {
-    const totalRestSeconds = template.exercises.reduce(
-      (acc, ex) => acc + (ex.sets * ex.restSeconds),
-      0
-    );
-    const workingTime = template.exercises.length * 3 * 60; // ~3 min per exercise
-    let totalMinutesRaw = (totalRestSeconds + workingTime) / 60;
-
-    if (totalMinutesRaw === 0) {
-      return "0 min";
-    }
-
-    let hours = Math.floor(totalMinutesRaw / 60);
-    let minutes = Math.round(totalMinutesRaw % 60); // Round minutes to nearest integer first
-
-    // Rule 1: Round up to next hour if minutes are 57-59
-    if (minutes >= 57 && minutes < 60) {
-      hours++;
-      minutes = 0;
-    } else {
-      // Rule 2: Otherwise, round minutes to the nearest 5
-      minutes = Math.round(minutes / 5) * 5;
-      
-      // Handle case where rounding minutes to 60 pushes it to the next hour
-      if (minutes === 60) {
-        hours++;
-        minutes = 0;
-      }
-    }
-
-    // Format the output
-    if (hours === 0) {
-      return `${minutes} min`;
-    } else if (minutes === 0) {
-      return `${hours}h`;
-    } else {
-      return `${hours}h ${minutes}m`;
-    }
-  };
-
-  // Handle drag end for reordering
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) {
       return;
@@ -135,6 +114,26 @@ export default function WorkoutsPage() {
     updateTemplateOrder(reorderedTemplates);
   };
 
+  const handleLogCycling = (durationMinutes: number) => {
+    addActivityLog({
+      id: crypto.randomUUID(),
+      type: "cycling",
+      durationMinutes,
+      date: new Date().toISOString(),
+    });
+  };
+
+  const handleLogSquash = (durationMinutes: number, winner: "Aleksej" | "Andreas") => {
+    addSquashGame({
+      id: crypto.randomUUID(),
+      durationMinutes,
+      winner,
+      player1: "Aleksej",
+      player2: "Andreas",
+      date: new Date().toISOString(),
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -143,7 +142,6 @@ export default function WorkoutsPage() {
             <Dumbbell className="inline-block h-7 w-7 mr-2 text-primary" />
             FitGutta
           </h1>
-          {/* Removed: <p className="text-muted-foreground">Your personalized fitness journey starts here.</p> */}
         </div>
         <Button onClick={() => navigate("/template/new")} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -162,13 +160,70 @@ export default function WorkoutsPage() {
         />
       )}
 
+      <div className="grid grid-cols-2 gap-4">
+        {/* Cycling Card */}
+        <Card
+          className="glass-card group hover:border-primary/50 transition-all cursor-pointer"
+          onClick={() => {
+            setActivityTypeToLog("cycling");
+            setIsLogActivityDialogOpen(true);
+          }}
+        >
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+            <div className="space-y-1">
+              <CardTitle className="text-lg flex items-center gap-2">
+                Cycling
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Bike className="h-4 w-4" />
+                <span>Log your cycling session</span>
+              </div>
+            </div>
+            <Button className="w-full gap-2">
+              <Plus className="h-4 w-4" />
+              Log Cycling
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Squash Card */}
+        <Card
+          className="glass-card group hover:border-primary/50 transition-all cursor-pointer"
+          onClick={() => setIsLogSquashDialogOpen(true)}
+        >
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+            <div className="space-y-1">
+              <CardTitle className="text-lg flex items-center gap-2">
+                Squash
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Racket className="h-4 w-4" />
+                <span>Log your squash game</span>
+              </div>
+            </div>
+            <Button className="w-full gap-2">
+              <Plus className="h-4 w-4" />
+              Log Squash
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="templates">
           {(provided) => (
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="grid grid-cols-2 gap-4" /* Changed to grid-cols-2 for all screen sizes */
+              className="grid grid-cols-2 gap-4"
             >
               {templates.map((template, index) => (
                 <Draggable key={template.id} draggableId={template.id} index={index}>
@@ -224,7 +279,6 @@ export default function WorkoutsPage() {
                             <Dumbbell className="h-4 w-4" />
                             <span>{template.exercises.length} exercises</span>
                           </div>
-                          {/* Removed estimated time and clock icon */}
                         </div>
                         <Button
                           onClick={() => handleStartWorkout(template.id)}
@@ -247,14 +301,14 @@ export default function WorkoutsPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
         <StatCircle
-          value={sessionsThisWeek}
-          label="Workouts this week"
+          value={totalActivitiesThisWeek}
+          label="Activities this week"
           icon={CalendarDays}
           colorClass="bg-blue-500/10 text-blue-500"
         />
         <StatCircle
-          value={totalSessions}
-          label="Total workouts"
+          value={totalSessionsAndActivities}
+          label="Total activities"
           icon={Activity}
           colorClass="bg-purple-500/10 text-purple-500"
         />
@@ -270,6 +324,28 @@ export default function WorkoutsPage() {
           icon={Clock}
           colorClass="bg-orange-500/10 text-orange-500"
         />
+        {squashGames.length > 0 && (
+          <>
+            <StatCircle
+              value={squashGames.length}
+              label="Squash Games"
+              icon={Racket}
+              colorClass="bg-red-500/10 text-red-500"
+            />
+            <StatCircle
+              value={aleksejWins}
+              label="Aleksej Wins"
+              icon={Racket}
+              colorClass="bg-indigo-500/10 text-indigo-500"
+            />
+            <StatCircle
+              value={andreasWins}
+              label="Andreas Wins"
+              icon={Racket}
+              colorClass="bg-yellow-500/10 text-yellow-500"
+            />
+          </>
+        )}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -288,6 +364,19 @@ export default function WorkoutsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <LogActivityDialog
+        isOpen={isLogActivityDialogOpen}
+        onClose={() => setIsLogActivityDialogOpen(false)}
+        onSave={handleLogCycling}
+        activityType="Cycling"
+      />
+
+      <LogSquashDialog
+        isOpen={isLogSquashDialogOpen}
+        onClose={() => setIsLogSquashDialogOpen(false)}
+        onSave={handleLogSquash}
+      />
     </div>
   );
 }

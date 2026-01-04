@@ -14,11 +14,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner"; // Using sonner for toasts
 import { useWorkoutData } from "@/hooks/useWorkoutData";
+import { useActivityData } from "@/hooks/useActivityData"; // Import the new hook
 
 export default function SettingsPage() {
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const { restoreFactorySettings } = useWorkoutData();
+  const { restoreFactorySettings: restoreWorkoutFactorySettings } = useWorkoutData();
+  const { restoreActivityFactorySettings } = useActivityData(); // Use the new hook
 
   const handleExportData = () => {
     const data = {
@@ -26,6 +28,7 @@ export default function SettingsPage() {
       sessions: localStorage.getItem("fittrack_sessions"),
       exercises: localStorage.getItem("fittrack_exercises"),
       recipes: localStorage.getItem("fittrack_recipes"),
+      activityData: localStorage.getItem("fittrack_activity_data"), // Export new activity data
       exportedAt: new Date().toISOString(),
     };
 
@@ -48,6 +51,7 @@ export default function SettingsPage() {
     localStorage.removeItem("fittrack_exercises");
     localStorage.removeItem("fittrack_recipes");
     localStorage.removeItem("fittrack_active_session");
+    localStorage.removeItem("fittrack_activity_data"); // Clear new activity data
     
     setClearAllDialogOpen(false);
     
@@ -60,7 +64,8 @@ export default function SettingsPage() {
   };
 
   const handleRestoreFactorySettings = () => {
-    restoreFactorySettings();
+    restoreWorkoutFactorySettings();
+    restoreActivityFactorySettings(); // Restore activity data
     setRestoreDialogOpen(false);
     toast.success("Factory settings restored", {
       description: "All data has been reset to default. Refreshing app...",
@@ -103,7 +108,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Reset all your custom data (templates, sessions, exercises, recipes) to the app's original default settings.
+              Reset all your custom data (templates, sessions, exercises, recipes, and activities) to the app's original default settings.
             </p>
             <Button
               onClick={() => setRestoreDialogOpen(true)}
@@ -160,7 +165,7 @@ export default function SettingsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Clear All Data</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete all your workout history, templates, and recipes.
+              This will permanently delete all your workout history, templates, recipes, and logged activities.
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -181,7 +186,7 @@ export default function SettingsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Restore Factory Settings</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to restore factory settings? This will delete all your custom templates, workout sessions, custom exercises, and recipes, replacing them with the app's original defaults.
+              Are you sure you want to restore factory settings? This will delete all your custom templates, workout sessions, custom exercises, recipes, and logged activities, replacing them with the app's original defaults.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
