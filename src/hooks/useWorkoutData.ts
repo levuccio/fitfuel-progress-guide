@@ -1,5 +1,5 @@
 import { useLocalStorage } from "./useLocalStorage";
-import { WorkoutTemplate, WorkoutSession, Exercise } from "@/types/workout";
+import { WorkoutTemplate, WorkoutSession, Exercise, ExerciseLog, SetLog } from "@/types/workout";
 import { defaultTemplates } from "@/data/templates";
 import { defaultExercises } from "@/data/exercises";
 import { defaultRecipes } from "@/data/recipes";
@@ -207,6 +207,41 @@ export function useWorkoutData() {
     );
   }, [setSessions]);
 
+  const updateSetLogInSession = useCallback((sessionId: string, exerciseLogId: string, updatedSet: SetLog) => {
+    setSessions(prevSessions =>
+      prevSessions.map(session =>
+        session.id === sessionId
+          ? {
+              ...session,
+              exercises: session.exercises.map(exLog =>
+                exLog.id === exerciseLogId
+                  ? {
+                      ...exLog,
+                      sets: exLog.sets.map(set =>
+                        set.id === updatedSet.id ? updatedSet : set
+                      ),
+                    }
+                  : exLog
+              ),
+            }
+          : session
+      )
+    );
+  }, [setSessions]);
+
+  const deleteExerciseLogFromSession = useCallback((sessionId: string, exerciseLogId: string) => {
+    setSessions(prevSessions =>
+      prevSessions.map(session =>
+        session.id === sessionId
+          ? {
+              ...session,
+              exercises: session.exercises.filter(exLog => exLog.id !== exerciseLogId),
+            }
+          : session
+      ).filter(session => session.exercises.length > 0) // Remove session if no exercises left
+    );
+  }, [setSessions]);
+
   const restoreFactorySettings = useCallback(() => {
     setTemplates(defaultTemplates);
     setSessions([]);
@@ -236,6 +271,8 @@ export function useWorkoutData() {
     getTemplateById,
     restoreFactorySettings,
     getExerciseHistoryData,
-    updateSessionDuration, // Expose the new function
+    updateSessionDuration,
+    updateSetLogInSession, // Expose new function
+    deleteExerciseLogFromSession, // Expose new function
   };
 }
