@@ -1,10 +1,21 @@
-import { useMemo, useCallback } from "react";
+import { useMemo } from "react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { useActivityData } from "@/hooks/useActivityData";
 import { StatCircle } from "@/components/StatCircle";
 import { CalendarDays, Activity, Timer, Clock, Gamepad, Dumbbell, Bike } from "lucide-react";
 import { isAfter, startOfWeek, endOfWeek } from "date-fns";
 import { formatDurationShort } from "@/lib/utils";
+
+// Define as a regular helper function outside the component
+const getActivitiesThisWeekHelper = (activities: { date: string; durationMinutes: number }[]) => {
+  const now = new Date();
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  return activities.filter(activity => {
+    const activityDate = new Date(activity.date);
+    return isAfter(activityDate, weekStart) && isAfter(weekEnd, activityDate);
+  });
+};
 
 export default function StatisticsPage() {
   const { sessions } = useWorkoutData();
@@ -30,27 +41,18 @@ export default function StatisticsPage() {
     [totalWorkoutTimeOverallSeconds]
   );
 
-  const getActivitiesThisWeek = useCallback((activities: { date: string; durationMinutes: number }[]) => {
-    const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-    return activities.filter(activity => {
-      const activityDate = new Date(activity.date);
-      return isAfter(activityDate, weekStart) && isAfter(weekEnd, activityDate);
-    });
-  }, []);
-
-  const sessionsThisWeekCount = useMemo(() => completedSessions.filter(session => {
-    const sessionDate = new Date(session.startTime);
-    const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-    return isAfter(sessionDate, weekStart) && isAfter(weekEnd, sessionDate);
-  }).length, [completedSessions]);
+  // Use the helper function directly
+  const sessionsThisWeekCount = useMemo(() => {
+    const workoutActivities = completedSessions.map(s => ({
+      date: s.startTime,
+      durationMinutes: (s.totalDuration || 0) / 60, // Convert seconds to minutes for consistency
+    }));
+    return getActivitiesThisWeekHelper(workoutActivities).length;
+  }, [completedSessions]);
 
   const activitiesThisWeekCount = useMemo(() => 
-    getActivitiesThisWeek(activityLogs).length + getActivitiesThisWeek(squashGames).length,
-    [activityLogs, squashGames, getActivitiesThisWeek]
+    getActivitiesThisWeekHelper(activityLogs).length + getActivitiesThisWeekHelper(squashGames).length,
+    [activityLogs, squashGames]
   );
   const totalActivitiesThisWeek = sessionsThisWeekCount + activitiesThisWeekCount;
 
@@ -60,12 +62,13 @@ export default function StatisticsPage() {
   );
 
   const totalWorkoutTimeThisWeekSeconds = useMemo(() => {
-    const workoutTime = getActivitiesThisWeek(completedSessions.map(s => ({ date: s.startTime, durationMinutes: (s.totalDuration || 0) / 60 })))
+    const workoutActivities = completedSessions.map(s => ({ date: s.startTime, durationMinutes: (s.totalDuration || 0) / 60 }));
+    const workoutTime = getActivitiesThisWeekHelper(workoutActivities)
       .reduce((acc, s) => acc + s.durationMinutes * 60, 0);
-    const activityTime = getActivitiesThisWeek(activityLogs).reduce((acc, log) => acc + log.durationMinutes * 60, 0);
-    const squashTime = getActivitiesThisWeek(squashGames).reduce((acc, game) => acc + game.durationMinutes * 60, 0);
+    const activityTime = getActivitiesThisWeekHelper(activityLogs).reduce((acc, log) => acc + log.durationMinutes * 60, 0);
+    const squashTime = getActivitiesThisWeekHelper(squashGames).reduce((acc, game) => acc + game.durationMinutes * 60, 0);
     return workoutTime + activityTime + squashTime;
-  }, [completedSessions, activityLogs, squashGames, getActivitiesThisWeek]);
+  }, [completedSessions, activityLogs, squashGames]);
 
   const totalWorkoutTimeThisWeek = useMemo(() => 
     formatDurationShort(totalWorkoutTimeThisWeekSeconds),
