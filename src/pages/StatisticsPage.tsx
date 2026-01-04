@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { useActivityData } from "@/hooks/useActivityData";
 import { StatCircle } from "@/components/StatCircle";
