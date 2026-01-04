@@ -158,15 +158,21 @@ export function useWorkoutData() {
       }),
     };
     setActiveSession(session);
+    console.log("startSession: activeSession set to", session);
     return session;
   }, [setActiveSession, allExercises, getLastSessionData]);
 
   const updateActiveSession = useCallback((session: WorkoutSession) => {
     setActiveSession(session);
+    console.log("updateActiveSession: activeSession set to", session);
   }, [setActiveSession]);
 
   const completeSession = useCallback(() => {
-    if (!activeSession) return;
+    if (!activeSession) {
+      console.log("completeSession: activeSession is null, returning.");
+      return;
+    }
+    console.log("completeSession: activeSession before completion", activeSession);
     
     const completedSession: WorkoutSession = {
       ...activeSession,
@@ -177,24 +183,30 @@ export function useWorkoutData() {
       ),
     };
     
-    setSessions(prev => [completedSession, ...prev]);
+    setSessions(prev => {
+      console.log("setSessions: Adding completed session:", completedSession);
+      const newSessions = [completedSession, ...prev];
+      console.log("setSessions: New sessions array:", newSessions);
+      return newSessions;
+    });
     setActiveSession(null);
+    console.log("completeSession: activeSession set to null");
     
     return completedSession;
   }, [activeSession, setSessions, setActiveSession]);
 
   const discardSession = useCallback(() => {
+    console.log("discardSession: activeSession set to null");
     setActiveSession(null);
   }, [setActiveSession]);
 
   const pauseSession = useCallback(() => {
-    if (!activeSession) return;
+    if (!activeSession) {
+      console.log("pauseSession: activeSession is null, returning.");
+      return;
+    }
+    console.log("pauseSession: activeSession status set to paused", activeSession.id);
     setActiveSession({ ...activeSession, status: "paused" });
-  }, [activeSession, setActiveSession]);
-
-  const resumeSession = useCallback(() => {
-    if (!activeSession) return;
-    setActiveSession({ ...activeSession, status: "in_progress" });
   }, [activeSession, setActiveSession]);
 
   const updateSessionDuration = useCallback((sessionId: string, newDurationSeconds: number) => {
