@@ -29,8 +29,8 @@ import { isAfter, startOfWeek, endOfWeek } from "date-fns";
 import { formatDurationShort } from "@/lib/utils";
 import { LogActivityDialog } from "@/components/activity/LogActivityDialog"; // Import new dialog
 import { LogSquashDialog } from "@/components/activity/LogSquashDialog"; // Import new dialog
-import andreasAvatar from "../D2147D31-2F00-48DD-9861-64B5FEB0C93D.png";
-import aleksejAvatar from "../FD0CA35B-B9F0-4A48-A579-B86E25EAB456.png";
+import andreasAvatar from "@/D2147D31-2F00-48DD-9861-64B5FEB0C93D.png";
+import aleksejAvatar from "@/FD0CA35B-B9F0-4A48-A579-B86E25EAB456.png";
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
