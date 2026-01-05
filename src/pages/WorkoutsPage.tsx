@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer, Bike, Gamepad } from "lucide-react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
-import { useActivityData } from "@/hooks/useActivityData"; // Import the new hook
+import { useActivityData } from "@/hooks/useActivityData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,15 +27,15 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautif
 import { StatCircle } from "@/components/StatCircle";
 import { isAfter, startOfWeek, endOfWeek } from "date-fns";
 import { formatDurationShort } from "@/lib/utils";
-import { LogActivityDialog } from "@/components/activity/LogActivityDialog"; // Import new dialog
-import { LogSquashDialog } from "@/components/activity/LogSquashDialog"; // Import new dialog
+import { LogActivityDialog } from "@/components/activity/LogActivityDialog";
+import { LogSquashDialog } from "@/components/activity/LogSquashDialog";
 import andreasAvatar from "@/D2147D31-2F00-48DD-9861-64B5FEB0C93D.png";
 import aleksejAvatar from "@/FD0CA35B-B9F0-4A48-A579-B86E25EAB456.png";
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
   const { templates, activeSession, deleteTemplate, resumeSession, discardSession, updateTemplateOrder, sessions } = useWorkoutData();
-  const { activityLogs, squashGames, addActivityLog, addSquashGame } = useActivityData(); // Use the new hook
+  const { activityLogs, squashGames, addActivityLog, addSquashGame } = useActivityData();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<WorkoutTemplate | null>(null);
@@ -45,7 +45,6 @@ export default function WorkoutsPage() {
 
   const completedSessions = sessions.filter(s => s.status === "completed");
 
-  // Combine all durations for total time calculations
   const allDurationsInSeconds = [
     ...completedSessions.map(s => s.totalDuration || 0),
     ...activityLogs.map(log => log.durationMinutes * 60),
@@ -78,10 +77,13 @@ export default function WorkoutsPage() {
 
   const totalSessionsAndActivities = completedSessions.length + activityLogs.length + squashGames.length;
 
-  const totalWorkoutTimeThisWeekSeconds = getActivitiesThisWeek(completedSessions.map(s => ({ date: s.startTime, durationMinutes: (s.totalDuration || 0) / 60 })))
-    .reduce((acc, s) => acc + s.durationMinutes * 60, 0) +
+  const totalWorkoutTimeThisWeekSeconds =
+    getActivitiesThisWeek(
+      completedSessions.map(s => ({ date: s.startTime, durationMinutes: (s.totalDuration || 0) / 60 })),
+    ).reduce((acc, s) => acc + s.durationMinutes * 60, 0) +
     getActivitiesThisWeek(activityLogs).reduce((acc, log) => acc + log.durationMinutes * 60, 0) +
     getActivitiesThisWeek(squashGames).reduce((acc, game) => acc + game.durationMinutes * 60, 0);
+
   const totalWorkoutTimeThisWeek = formatDurationShort(totalWorkoutTimeThisWeekSeconds);
 
   const aleksejWins = squashGames.filter(game => game.winner === "Aleksej").length;
@@ -163,7 +165,6 @@ export default function WorkoutsPage() {
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        {/* Cycling Card */}
         <Card
           className="glass-card group hover:border-primary/50 transition-all cursor-pointer"
           onClick={() => {
@@ -173,9 +174,7 @@ export default function WorkoutsPage() {
         >
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <div className="space-y-1">
-              <CardTitle className="text-lg flex items-center gap-2">
-                Cycling
-              </CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">Cycling</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -192,16 +191,13 @@ export default function WorkoutsPage() {
           </CardContent>
         </Card>
 
-        {/* Squash Card */}
         <Card
           className="glass-card group hover:border-primary/50 transition-all cursor-pointer"
           onClick={() => setIsLogSquashDialogOpen(true)}
         >
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <div className="space-y-1">
-              <CardTitle className="text-lg flex items-center gap-2">
-                Squash
-              </CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">Squash</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -222,11 +218,7 @@ export default function WorkoutsPage() {
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="templates">
           {(provided) => (
-            <div
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="grid grid-cols-2 gap-4"
-            >
+            <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-2 gap-4">
               {templates.map((template, index) => (
                 <Draggable key={template.id} draggableId={template.id} index={index}>
                   {(provided, snapshot) => (
@@ -362,7 +354,10 @@ export default function WorkoutsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -373,7 +368,7 @@ export default function WorkoutsPage() {
         isOpen={isLogActivityDialogOpen}
         onClose={() => setIsLogActivityDialogOpen(false)}
         onSave={handleLogCycling}
-        activityType="Cycling"
+        activityType={activityTypeToLog === "cycling" ? "Cycling" : "Activity"}
       />
 
       <LogSquashDialog
