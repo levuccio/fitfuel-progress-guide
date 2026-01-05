@@ -1,6 +1,6 @@
 {
-  "name": "FitteGutta - Training & Recipes",
-  "short_name": "FitteGutta",
+  "name": "FitGutta - Training & Recipes",
+  "short_name": "FitGutta",
   "description": "Personal fitness PWA for tracking workouts, monitoring progress, and managing recipes",
   "start_url": "/",
   "display": "standalone",
