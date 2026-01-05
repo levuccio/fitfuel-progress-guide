@@ -1,6 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer, Bike, Gamepad } from "lucide-react";
+import {
+  Plus,
+  Play,
+  Clock,
+  Dumbbell,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  CalendarDays,
+  Activity,
+  Timer,
+  Bike,
+  Gamepad,
+} from "lucide-react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { useActivityData } from "@/hooks/useActivityData";
 import { Button } from "@/components/ui/button";
@@ -34,7 +47,15 @@ import aleksejAvatar from "@/FD0CA35B-B9F0-4A48-A579-B86E25EAB456.png";
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
-  const { templates, activeSession, deleteTemplate, resumeSession, discardSession, updateTemplateOrder, sessions } = useWorkoutData();
+  const {
+    templates,
+    activeSession,
+    deleteTemplate,
+    resumeSession,
+    discardSession,
+    updateTemplateOrder,
+    sessions,
+  } = useWorkoutData();
   const { activityLogs, squashGames, addActivityLog, addSquashGame } = useActivityData();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -43,28 +64,31 @@ export default function WorkoutsPage() {
   const [activityTypeToLog, setActivityTypeToLog] = useState<"cycling" | "other">("cycling");
   const [isLogSquashDialogOpen, setIsLogSquashDialogOpen] = useState(false);
 
-  const completedSessions = sessions.filter(s => s.status === "completed");
+  const completedSessions = sessions.filter((s) => s.status === "completed");
 
   const allDurationsInSeconds = [
-    ...completedSessions.map(s => s.totalDuration || 0),
-    ...activityLogs.map(log => log.durationMinutes * 60),
-    ...squashGames.map(game => game.durationMinutes * 60),
+    ...completedSessions.map((s) => s.totalDuration || 0),
+    ...activityLogs.map((log) => log.durationMinutes * 60),
+    ...squashGames.map((game) => game.durationMinutes * 60),
   ];
 
-  const totalWorkoutTimeOverallSeconds = allDurationsInSeconds.reduce((acc, duration) => acc + duration, 0);
+  const totalWorkoutTimeOverallSeconds = allDurationsInSeconds.reduce(
+    (acc, duration) => acc + duration,
+    0,
+  );
   const totalWorkoutTimeOverall = formatDurationShort(totalWorkoutTimeOverallSeconds);
 
   const getActivitiesThisWeek = (activities: { date: string; durationMinutes: number }[]) => {
     const now = new Date();
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-    return activities.filter(activity => {
+    return activities.filter((activity) => {
       const activityDate = new Date(activity.date);
       return isAfter(activityDate, weekStart) && isAfter(weekEnd, activityDate);
     });
   };
 
-  const sessionsThisWeekCount = completedSessions.filter(session => {
+  const sessionsThisWeekCount = completedSessions.filter((session) => {
     const sessionDate = new Date(session.startTime);
     const now = new Date();
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
@@ -72,22 +96,33 @@ export default function WorkoutsPage() {
     return isAfter(sessionDate, weekStart) && isAfter(weekEnd, sessionDate);
   }).length;
 
-  const activitiesThisWeekCount = getActivitiesThisWeek(activityLogs).length + getActivitiesThisWeek(squashGames).length;
+  const activitiesThisWeekCount =
+    getActivitiesThisWeek(activityLogs).length + getActivitiesThisWeek(squashGames).length;
   const totalActivitiesThisWeek = sessionsThisWeekCount + activitiesThisWeekCount;
 
-  const totalSessionsAndActivities = completedSessions.length + activityLogs.length + squashGames.length;
+  const totalSessionsAndActivities =
+    completedSessions.length + activityLogs.length + squashGames.length;
 
   const totalWorkoutTimeThisWeekSeconds =
     getActivitiesThisWeek(
-      completedSessions.map(s => ({ date: s.startTime, durationMinutes: (s.totalDuration || 0) / 60 })),
+      completedSessions.map((s) => ({
+        date: s.startTime,
+        durationMinutes: (s.totalDuration || 0) / 60,
+      })),
     ).reduce((acc, s) => acc + s.durationMinutes * 60, 0) +
-    getActivitiesThisWeek(activityLogs).reduce((acc, log) => acc + log.durationMinutes * 60, 0) +
-    getActivitiesThisWeek(squashGames).reduce((acc, game) => acc + game.durationMinutes * 60, 0);
+    getActivitiesThisWeek(activityLogs).reduce(
+      (acc, log) => acc + log.durationMinutes * 60,
+      0,
+    ) +
+    getActivitiesThisWeek(squashGames).reduce(
+      (acc, game) => acc + game.durationMinutes * 60,
+      0,
+    );
 
   const totalWorkoutTimeThisWeek = formatDurationShort(totalWorkoutTimeThisWeekSeconds);
 
-  const aleksejWins = squashGames.filter(game => game.winner === "Aleksej").length;
-  const andreasWins = squashGames.filter(game => game.winner === "Andreas").length;
+  const aleksejWins = squashGames.filter((game) => game.winner === "Aleksej").length;
+  const andreasWins = squashGames.filter((game) => game.winner === "Andreas").length;
 
   const handleStartWorkout = (templateId: string) => {
     navigate(`/workout/${templateId}`);
@@ -165,6 +200,7 @@ export default function WorkoutsPage() {
       )}
 
       <div className="grid grid-cols-2 gap-4">
+        {/* Cycling Card */}
         <Card
           className="glass-card group hover:border-primary/50 transition-all cursor-pointer"
           onClick={() => {
@@ -191,6 +227,7 @@ export default function WorkoutsPage() {
           </CardContent>
         </Card>
 
+        {/* Squash Card */}
         <Card
           className="glass-card group hover:border-primary/50 transition-all cursor-pointer"
           onClick={() => setIsLogSquashDialogOpen(true)}
@@ -218,7 +255,11 @@ export default function WorkoutsPage() {
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="templates">
           {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-2 gap-4">
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="grid grid-cols-2 gap-4"
+            >
               {templates.map((template, index) => (
                 <Draggable key={template.id} draggableId={template.id} index={index}>
                   {(provided, snapshot) => (
@@ -253,7 +294,9 @@ export default function WorkoutsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/template/${template.id}/edit`)}>
+                            <DropdownMenuItem
+                              onClick={() => navigate(`/template/${template.id}/edit`)}
+                            >
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
@@ -349,7 +392,8 @@ export default function WorkoutsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Template</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
