@@ -18,6 +18,7 @@ import { formatDurationShort } from "@/lib/utils";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { EditDurationDialog } from "@/components/EditDurationDialog"; // Import the new dialog
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 type HistoryEntry = {
   id: string;
@@ -33,6 +34,7 @@ type HistoryEntry = {
 };
 
 export default function HistoryPage() {
+  const navigate = useNavigate(); // Initialize useNavigate
   const { sessions, updateSessionDuration, deleteSession } = useWorkoutData();
   const { activityLogs, squashGames, updateActivityLogDuration, deleteActivityLog, updateSquashGameDuration, deleteSquashGame } = useActivityData();
 
@@ -166,7 +168,11 @@ export default function HistoryPage() {
 
       <div className="space-y-3">
         {allHistoryEntries.map((entry) => (
-          <Card key={entry.id} className="glass-card">
+          <Card
+            key={entry.id}
+            className="glass-card"
+            onClick={() => entry.type === "workout" && navigate(`/history/workout/${entry.id}`)} // Navigate to edit page for workouts
+          >
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
@@ -193,7 +199,10 @@ export default function HistoryPage() {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    onClick={() => handleEditDuration(entry)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent card click from triggering
+                      handleEditDuration(entry);
+                    }}
                   >
                     <Pencil className="h-3 w-3" />
                   </Button>
@@ -224,7 +233,10 @@ export default function HistoryPage() {
                   variant="ghost"
                   size="icon"
                   className="text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDeleteEntry(entry)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent card click from triggering
+                    handleDeleteEntry(entry);
+                  }}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

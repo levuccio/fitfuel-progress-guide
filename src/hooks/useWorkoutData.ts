@@ -207,6 +207,16 @@ export function useWorkoutData() {
     );
   }, [setSessions]);
 
+  const updateSession = useCallback((updatedSession: WorkoutSession) => {
+    setSessions(prevSessions =>
+      prevSessions.map(session =>
+        session.id === updatedSession.id
+          ? updatedSession
+          : session
+      )
+    );
+  }, [setSessions]);
+
   const deleteSession = useCallback((sessionId: string) => {
     setSessions(prevSessions => prevSessions.filter(session => session.id !== sessionId));
   }, [setSessions]);
@@ -241,6 +251,7 @@ export function useWorkoutData() {
     restoreFactorySettings,
     getExerciseHistoryData,
     updateSessionDuration,
+    updateSession, // Added updateSession
     deleteSession,
   };
 }
