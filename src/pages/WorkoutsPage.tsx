@@ -29,7 +29,6 @@ import { isAfter, startOfWeek, endOfWeek } from "date-fns";
 import { formatDurationShort } from "@/lib/utils";
 import { LogActivityDialog } from "@/components/activity/LogActivityDialog";
 import { LogSquashDialog } from "@/components/activity/LogSquashDialog";
-// Removed local image imports for avatars
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
@@ -300,6 +299,7 @@ export default function WorkoutsPage() {
         </Droppable>
       </DragDropContext>
 
+      {/* General Activity Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
         <StatCircle
           value={totalActivitiesThisWeek}
@@ -325,31 +325,31 @@ export default function WorkoutsPage() {
           icon={Clock}
           colorClass="bg-orange-500/10 text-orange-500"
         />
-        {squashGames.length > 0 && (
-          <>
-            <StatCircle
-              value={squashGames.length}
-              label="Squash Games"
-              icon={Gamepad}
-              colorClass="bg-red-500/10 text-red-500"
-            />
-            <StatCircle
-              value={aleksejWins}
-              label="Aleksej Wins"
-              icon={Gamepad}
-              imageSrc="https://i.postimg.cc/jnvrmTCz/D2147D31-2F00-48DD-9861-64B5FEB0C93D.png" // Direct URL for Aleksej's avatar
-              colorClass="bg-red-600/20 text-red-600"
-            />
-            <StatCircle
-              value={andreasWins}
-              label="Andreas Wins"
-              icon={Gamepad}
-              imageSrc="https://i.postimg.cc/rRgL3Tz9/FD0CA35B-B9F0-4A48-A579-B86E25EAB456.png" // Direct URL for Andreas's avatar
-              colorClass="bg-blue-600/20 text-blue-600"
-            />
-          </>
-        )}
       </div>
+
+      {/* Squash Game Stats (conditionally rendered in a separate grid) */}
+      {squashGames.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
+          <StatCircle
+            value={squashGames.length}
+            label="Squash Games"
+            icon={Gamepad}
+            colorClass="bg-red-500/10 text-red-500"
+          />
+          <StatCircle
+            value={aleksejWins}
+            label="Aleksej Wins"
+            icon={Gamepad} // Reverted to icon
+            colorClass="bg-red-600/20 text-red-600"
+          />
+          <StatCircle
+            value={andreasWins}
+            label="Andreas Wins"
+            icon={Gamepad} // Reverted to icon
+            colorClass="bg-blue-600/20 text-blue-600"
+          />
+        </div>
+      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
