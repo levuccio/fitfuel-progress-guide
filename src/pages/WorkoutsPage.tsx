@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer, Bike, Gamepad } from "lucide-react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
-import { useActivityData } from "@/hooks/useActivityData"; // Import the new hook
+import { useActivityData } from "@/hooks/useActivityData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,13 +27,15 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautif
 import { StatCircle } from "@/components/StatCircle";
 import { isAfter, startOfWeek, endOfWeek } from "date-fns";
 import { formatDurationShort } from "@/lib/utils";
-import { LogActivityDialog } from "@/components/activity/LogActivityDialog"; // Import new dialog
-import { LogSquashDialog } from "@/components/activity/LogSquashDialog"; // Import new dialog
+import { LogActivityDialog } from "@/components/activity/LogActivityDialog";
+import { LogSquashDialog } from "@/components/activity/LogSquashDialog";
+import aleksejAvatar from "@/aleksej-avatar.png"; // Import Aleksej's avatar
+import andreasAvatar from "@/andreas-avatar.png"; // Import Andreas's avatar
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
   const { templates, activeSession, deleteTemplate, resumeSession, discardSession, updateTemplateOrder, sessions } = useWorkoutData();
-  const { activityLogs, squashGames, addActivityLog, addSquashGame } = useActivityData(); // Use the new hook
+  const { activityLogs, squashGames, addActivityLog, addSquashGame } = useActivityData();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<WorkoutTemplate | null>(null);
@@ -140,7 +142,7 @@ export default function WorkoutsPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center">
             <Dumbbell className="inline-block h-7 w-7 mr-2 text-primary" />
-            FitGutta
+            FitteGutta
           </h1>
         </div>
         <Button onClick={() => navigate("/template/new")} className="gap-2">
@@ -336,13 +338,15 @@ export default function WorkoutsPage() {
               value={aleksejWins}
               label="Aleksej Wins"
               icon={Gamepad}
-              colorClass="bg-indigo-500/10 text-indigo-500"
+              imageSrc={aleksejAvatar} // Pass Aleksej's avatar
+              colorClass="bg-red-600/20 text-red-600"
             />
             <StatCircle
               value={andreasWins}
               label="Andreas Wins"
               icon={Gamepad}
-              colorClass="bg-yellow-500/10 text-yellow-500"
+              imageSrc={andreasAvatar} // Pass Andreas's avatar
+              colorClass="bg-blue-600/20 text-blue-600"
             />
           </>
         )}
@@ -369,7 +373,7 @@ export default function WorkoutsPage() {
         isOpen={isLogActivityDialogOpen}
         onClose={() => setIsLogActivityDialogOpen(false)}
         onSave={handleLogCycling}
-        activityType="Cycling"
+        activityType={activityTypeToLog === "cycling" ? "Cycling" : "Activity"}
       />
 
       <LogSquashDialog
