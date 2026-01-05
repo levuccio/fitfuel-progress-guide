@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils"; // Import cn for conditional styling
 
 interface LogSquashDialogProps {
   isOpen: boolean;
@@ -20,7 +20,7 @@ interface LogSquashDialogProps {
 
 export function LogSquashDialog({ isOpen, onClose, onSave }: LogSquashDialogProps) {
   const [durationMinutes, setDurationMinutes] = useState<number>(60);
-  const [winner, setWinner] = useState<"Aleksej" | "Andreas">("Aleksej");
+  const [winner, setWinner] = useState<"Aleksej" | "Andreas">("Aleksej"); // Default winner
 
   const handleSave = () => {
     if (durationMinutes > 0 && winner) {
@@ -28,6 +28,9 @@ export function LogSquashDialog({ isOpen, onClose, onSave }: LogSquashDialogProp
       onClose();
     }
   };
+
+  const aleksejAvatarUrl = "https://i.postimg.cc/jnvrmTCz/D2147D31-2F00-48DD-9861-64B5FEB0C93D.png";
+  const andreasAvatarUrl = "https://i.postimg.cc/rRgL3Tz9/FD0CA35B-B9F0-4A48-A579-B86E25EAB456.png";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -57,20 +60,30 @@ export function LogSquashDialog({ isOpen, onClose, onSave }: LogSquashDialogProp
             <Label className="text-right">
               Winner
             </Label>
-            <RadioGroup
-              value={winner}
-              onValueChange={(value: "Aleksej" | "Andreas") => setWinner(value)}
-              className="col-span-3 flex gap-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Aleksej" id="aleksej" />
-                <Label htmlFor="aleksej">Aleksej</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Andreas" id="andreas" />
-                <Label htmlFor="andreas">Andreas</Label>
-              </div>
-            </RadioGroup>
+            <div className="col-span-3 flex gap-4">
+              <Button
+                variant="ghost"
+                className={cn(
+                  "flex flex-col items-center gap-2 p-2 rounded-lg transition-all",
+                  winner === "Aleksej" ? "ring-2 ring-primary bg-primary/10" : "hover:bg-secondary"
+                )}
+                onClick={() => setWinner("Aleksej")}
+              >
+                <img src={aleksejAvatarUrl} alt="Aleksej" className="w-12 h-12 rounded-full object-cover" />
+                <span className="text-sm font-medium">Aleksej</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "flex flex-col items-center gap-2 p-2 rounded-lg transition-all",
+                  winner === "Andreas" ? "ring-2 ring-primary bg-primary/10" : "hover:bg-secondary"
+                )}
+                onClick={() => setWinner("Andreas")}
+              >
+                <img src={andreasAvatarUrl} alt="Andreas" className="w-12 h-12 rounded-full object-cover" />
+                <span className="text-sm font-medium">Andreas</span>
+              </Button>
+            </div>
           </div>
         </div>
         <DialogFooter>
