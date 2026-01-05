@@ -136,6 +136,12 @@
   .safe-top {
     padding-top: env(safe-area-inset-top);
   }
+
+  /* Pixel-art images */
+  .pixelated {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
 }
 
 @layer utilities {

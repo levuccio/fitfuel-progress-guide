@@ -29,6 +29,8 @@ import { isAfter, startOfWeek, endOfWeek } from "date-fns";
 import { formatDurationShort } from "@/lib/utils";
 import { LogActivityDialog } from "@/components/activity/LogActivityDialog"; // Import new dialog
 import { LogSquashDialog } from "@/components/activity/LogSquashDialog"; // Import new dialog
+import andreasAvatar from "../D2147D31-2F00-48DD-9861-64B5FEB0C93D.png";
+import aleksejAvatar from "../FD0CA35B-B9F0-4A48-A579-B86E25EAB456.png";
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
@@ -336,13 +338,15 @@ export default function WorkoutsPage() {
               value={aleksejWins}
               label="Aleksej Wins"
               icon={Gamepad}
-              colorClass="bg-indigo-500/10 text-indigo-500"
+              imageSrc={aleksejAvatar}
+              colorClass="bg-red-600/20 text-red-600"
             />
             <StatCircle
               value={andreasWins}
               label="Andreas Wins"
               icon={Gamepad}
-              colorClass="bg-yellow-500/10 text-yellow-500"
+              imageSrc={andreasAvatar}
+              colorClass="bg-blue-600/20 text-blue-600"
             />
           </>
         )}
