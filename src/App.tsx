@@ -13,6 +13,9 @@ import WorkoutSessionPage from "./pages/WorkoutSessionPage";
 import TemplateBuilderPage from "./pages/TemplateBuilderPage";
 import RecipeDetailPage from "./pages/RecipeDetailPage";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "./context/AuthContext"; // Import AuthProvider
+import AuthPage from "./pages/AuthPage"; // We'll create this next
+import ProtectedRoute from "./components/ProtectedRoute"; // We'll create this next
 
 const queryClient = new QueryClient();
 
@@ -22,20 +25,25 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<WorkoutsPage />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/progress" element={<ProgressPage />} />
-            <Route path="/recipes" element={<RecipesPage />} />
-            <Route path="/recipes/:id" element={<RecipeDetailPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/workout/:templateId" element={<WorkoutSessionPage />} />
-            <Route path="/template/new" element={<TemplateBuilderPage />} />
-            <Route path="/template/:id/edit" element={<TemplateBuilderPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
+        <AuthProvider> {/* Wrap with AuthProvider */}
+          <Layout>
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} /> {/* Auth page */}
+              <Route element={<ProtectedRoute />}> {/* Protected routes */}
+                <Route path="/" element={<WorkoutsPage />} />
+                <Route path="/history" element={<HistoryPage />} />
+                <Route path="/progress" element={<ProgressPage />} />
+                <Route path="/recipes" element={<RecipesPage />} />
+                <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/workout/:templateId" element={<WorkoutSessionPage />} />
+                <Route path="/template/new" element={<TemplateBuilderPage />} />
+                <Route path="/template/:id/edit" element={<TemplateBuilderPage />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
