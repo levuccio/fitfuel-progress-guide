@@ -5,7 +5,6 @@ export interface Exercise {
   targetMuscles: string[];
   equipment: string[];
   isCustom: boolean;
-  user_id?: string; // Added for Supabase RLS
 }
 
 export interface TemplateExercise {
@@ -27,7 +26,6 @@ export interface WorkoutTemplate {
   isCustom: boolean;
   createdAt: string;
   updatedAt: string;
-  user_id?: string; // Added for Supabase RLS
 }
 
 export interface SetLog {

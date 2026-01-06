@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Download, Info, RotateCcw, LogOut } from "lucide-react"; // Import LogOut icon
+import { Trash2, Download, Info, RotateCcw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,15 +14,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner"; // Using sonner for toasts
 import { useWorkoutData } from "@/hooks/useWorkoutData";
-import { useActivityData } from "@/hooks/useActivityData";
-import { useAuth } from "@/context/AuthContext"; // Import useAuth hook
+import { useActivityData } from "@/hooks/useActivityData"; // Import the new hook
 
 export default function SettingsPage() {
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const { restoreFactorySettings: restoreWorkoutFactorySettings } = useWorkoutData();
-  const { restoreActivityFactorySettings } = useActivityData();
-  const { signOut } = useAuth(); // Get signOut function from AuthContext
+  const { restoreActivityFactorySettings } = useActivityData(); // Use the new hook
 
   const handleExportData = () => {
     const data = {
@@ -30,7 +28,7 @@ export default function SettingsPage() {
       sessions: localStorage.getItem("fittrack_sessions"),
       exercises: localStorage.getItem("fittrack_exercises"),
       recipes: localStorage.getItem("fittrack_recipes"),
-      activityData: localStorage.getItem("fittrack_activity_data"),
+      activityData: localStorage.getItem("fittrack_activity_data"), // Export new activity data
       exportedAt: new Date().toISOString(),
     };
 
@@ -53,7 +51,7 @@ export default function SettingsPage() {
     localStorage.removeItem("fittrack_exercises");
     localStorage.removeItem("fittrack_recipes");
     localStorage.removeItem("fittrack_active_session");
-    localStorage.removeItem("fittrack_activity_data");
+    localStorage.removeItem("fittrack_activity_data"); // Clear new activity data
     
     setClearAllDialogOpen(false);
     
@@ -67,18 +65,13 @@ export default function SettingsPage() {
 
   const handleRestoreFactorySettings = () => {
     restoreWorkoutFactorySettings();
-    restoreActivityFactorySettings();
+    restoreActivityFactorySettings(); // Restore activity data
     setRestoreDialogOpen(false);
     toast.success("Factory settings restored", {
       description: "All data has been reset to default. Refreshing app...",
     });
     // Reload after a short delay to allow toast to be seen
     setTimeout(() => window.location.reload(), 500);
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-    // The onAuthStateChange listener in AuthContext will handle redirection
   };
 
   return (
@@ -143,23 +136,6 @@ export default function SettingsPage() {
               variant="destructive"
             >
               Clear All Data
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <LogOut className="h-5 w-5" />
-              Account
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Log out from your current session.
-            </p>
-            <Button onClick={handleSignOut} variant="outline">
-              Log Out
             </Button>
           </CardContent>
         </Card>
