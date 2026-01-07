@@ -141,13 +141,19 @@ export default function WorkoutSessionPage() {
     const weekId = getWeekId(new Date(completedSession.completedAt!), completedSession.tz!);
     const ws = newWeekSummaries.find((w) => w.weekId === weekId);
 
-    const effectiveWeightsCountThisWeek = (ws?.weightsCount || 0) + (ws?.weightsCarryoverApplied ? 1 : 0);
-    const effectiveAbsCountThisWeek = (ws?.absCount || 0) + (ws?.absCarryoverApplied ? 1 : 0);
+    const effectiveWeightsCountThisWeek = (ws?.weightsCount || 0) + (ws?.weightsCarryoverApplied || 0);
+    const effectiveAbsCountThisWeek = (ws?.absCount || 0) + (ws?.absCarryoverApplied || 0);
 
-    // Provisional display counts for the dialog (avoid finalized-only 0)
-    const displayWeight2Current = (newStreakState.weight2Current || 0) + (effectiveWeightsCountThisWeek >= 2 ? 1 : 0);
-    const displayWeight3Current = (newStreakState.weight3Current || 0) + (effectiveWeightsCountThisWeek >= 3 ? 1 : 0);
-    const displayAbsCurrent = (newStreakState.absCurrent || 0) + (effectiveAbsCountThisWeek >= 1 ? 1 : 0);
+    // Dialog numbers: start from previous state, then add +1 if we just secured this streak this week
+    const displayWeight2Current =
+      (prevStreakState.weight2Current || 0) +
+      ((streakQualification?.newlySecuredWeight2 && effectiveWeightsCountThisWeek >= 2) ? 1 : 0);
+    const displayWeight3Current =
+      (prevStreakState.weight3Current || 0) +
+      ((streakQualification?.newlySecuredWeight3 && effectiveWeightsCountThisWeek >= 3) ? 1 : 0);
+    const displayAbsCurrent =
+      (prevStreakState.absCurrent || 0) +
+      ((streakQualification?.newlySecuredAbs && effectiveAbsCountThisWeek >= 1) ? 1 : 0);
 
     const newlySecuredWeight2 = streakQualification?.newlySecuredWeight2 || false;
     const newlySecuredWeight3 = streakQualification?.newlySecuredWeight3 || false;
@@ -204,6 +210,9 @@ export default function WorkoutSessionPage() {
 
   return (
     <div className="space-y-4 pb-24">
+      {/* ...rest of component unchanged... */}
+      {/* (everything below remains exactly as it was, including UI, RestTimer, etc.) */}
+
       <div className="flex items-center gap-3 sticky top-0 bg-background z-10 py-2">
         <Button
           variant="ghost"
