@@ -3,6 +3,7 @@ import { useLocalStorage } from "./useLocalStorage";
 import { WeekSummary, StreakState, WorkoutSession } from "@/types/workout";
 import { getWeekId, prevWeekId, getWeekIdsBetween, getUserTimezone } from "@/lib/date-utils";
 import { toast } from "sonner";
+import { isBefore } from "date-fns"; // Import isBefore for date comparison
 
 const WEEK_SUMMARY_KEY = "fittrack_week_summaries";
 const STREAK_STATE_KEY = "fittrack_streak_state";
@@ -23,7 +24,7 @@ export function useStreakData() {
     weight2SaveTokens: 0,
     weight3SaveTokens: 0,
     absSaveTokens: 0,
-    weightCarryoverCredits: 0,
+    generalCarryoverCredits: 0, // Renamed
     weight2MilestoneAwarded: 0,
     weight3MilestoneAwarded: 0,
     absMilestoneAwarded: 0,
@@ -54,7 +55,8 @@ export function useStreakData() {
     weekId,
     weightsCount: 0,
     absCount: 0,
-    carryoverApplied: false,
+    weightsCarryoverApplied: false, // New default
+    absCarryoverApplied: false,     // New default
     carryoverEarnedThisWeek: false,
     finalized: false,
     updatedAt: new Date().toISOString(),
@@ -116,8 +118,14 @@ export function useStreakData() {
       const lastFinalized = currentStreakState.lastFinalizedWeekId;
       const weeksToFinalize = getWeekIdsBetween(lastFinalized, prevWeekId(currentWeekId));
 
+      console.log("--- Finalizing Weeks ---");
+      console.log("Last Finalized Week:", lastFinalized);
+      console.log("Current Week:", currentWeekId);
+      console.log("Weeks to Finalize:", weeksToFinalize);
+      console.log("Initial Streak State:", currentStreakState);
+
       if (weeksToFinalize.length === 0 && lastFinalized === prevWeekId(currentWeekId)) {
-        // Already finalized up to the previous week, nothing to do
+        console.log("No new weeks to finalize.");
         return prevStreakState;
       }
 
@@ -125,14 +133,20 @@ export function useStreakData() {
         let summary = getWeekSummary(weekId) || initWeekSummary(weekId);
 
         if (summary.finalized) {
+          console.log(`Week ${weekId} already finalized. Skipping.`);
           currentStreakState.lastFinalizedWeekId = weekId;
           continue;
         }
 
-        const effectiveWeightsCount = summary.weightsCount + (summary.carryoverApplied ? 1 : 0);
+        const effectiveWeightsCount = summary.weightsCount + (summary.weightsCarryoverApplied ? 1 : 0);
+        const effectiveAbsCount = summary.absCount + (summary.absCarryoverApplied ? 1 : 0); // New: Abs carryover
+        
         const qualifiedWeight2 = effectiveWeightsCount >= 2;
         const qualifiedWeight3 = effectiveWeightsCount >= 3;
-        const qualifiedAbs = summary.absCount >= 1;
+        const qualifiedAbs = effectiveAbsCount >= 1; // Use effectiveAbsCount
+
+        console.log(`Processing week ${weekId}: Weights: ${summary.weightsCount} (Applied: ${summary.weightsCarryoverApplied}), Abs: ${summary.absCount} (Applied: ${summary.absCarryoverApplied})`);
+        console.log(`Effective Weights: ${effectiveWeightsCount}, Effective Abs: ${effectiveAbsCount}`);
 
         // WEIGHT 2x STREAK FINALIZATION
         if (qualifiedWeight2) {
@@ -140,7 +154,7 @@ export function useStreakData() {
         } else if (currentStreakState.weight2SaveTokens > 0) {
           currentStreakState.weight2SaveTokens -= 1;
           currentStreakState.weight2Current += 1;
-          // toast.info(`1 Weight 2x Streak Save Token used for week ${weekId}.`);
+          toast.info(`1 Weight 2x Streak Save Token used for week ${weekId}.`);
         } else {
           currentStreakState.weight2Current = 0;
         }
@@ -151,7 +165,7 @@ export function useStreakData() {
         } else if (currentStreakState.weight3SaveTokens > 0) {
           currentStreakState.weight3SaveTokens -= 1;
           currentStreakState.weight3Current += 1;
-          // toast.info(`1 Weight 3x Streak Save Token used for week ${weekId}.`);
+          toast.info(`1 Weight 3x Streak Save Token used for week ${weekId}.`);
         } else {
           currentStreakState.weight3Current = 0;
         }
@@ -162,7 +176,7 @@ export function useStreakData() {
         } else if (currentStreakState.absSaveTokens > 0) {
           currentStreakState.absSaveTokens -= 1;
           currentStreakState.absCurrent += 1;
-          // toast.info(`1 Abs Streak Save Token used for week ${weekId}.`);
+          toast.info(`1 Abs Streak Save Token used for week ${weekId}.`);
         } else {
           currentStreakState.absCurrent = 0;
         }
@@ -174,10 +188,10 @@ export function useStreakData() {
 
         // Handle carryover credits earned in this finalized week
         if (summary.carryoverEarnedThisWeek) {
-          currentStreakState.weightCarryoverCredits += 1;
-          // toast.success("Carryover Credit Earned!", {
-          //   description: `You completed 4+ weight sessions in week ${weekId} and earned a carryover credit!`,
-          // });
+          currentStreakState.generalCarryoverCredits += 1; // Use generalCarryoverCredits
+          toast.success("Carryover Credit Earned!", {
+            description: `You completed 4+ weight sessions in week ${weekId} and earned a carryover credit!`,
+          });
         }
 
         summary.finalized = true;
@@ -188,7 +202,9 @@ export function useStreakData() {
         currentStreakState = stateAfterMilestones;
 
         currentStreakState.lastFinalizedWeekId = weekId;
+        console.log(`Streak State after week ${weekId}:`, currentStreakState);
       }
+      console.log("Final Streak State after rollover:", currentStreakState);
       return currentStreakState;
     });
   }, [currentWeekId, getWeekSummary, initWeekSummary, updateWeekSummary, awardMilestonesAndTokensIfNeeded]);
@@ -227,42 +243,52 @@ export function useStreakData() {
     updateWeekSummary(summary);
 
     // Return flags for the post-workout dialog
-    const effectiveWeightsCount = summary.weightsCount + (summary.carryoverApplied ? 1 : 0);
-    const prevEffectiveWeightsCount = prevWeightsCount + (summary.carryoverApplied ? 1 : 0);
+    const effectiveWeightsCount = summary.weightsCount + (summary.weightsCarryoverApplied ? 1 : 0);
+    const prevEffectiveWeightsCount = prevWeightsCount + (summary.weightsCarryoverApplied ? 1 : 0);
+    const effectiveAbsCount = summary.absCount + (summary.absCarryoverApplied ? 1 : 0);
+    const prevEffectiveAbsCount = prevAbsCount + (summary.absCarryoverApplied ? 1 : 0);
 
     const newlySecuredWeight2 = (prevEffectiveWeightsCount < 2 && effectiveWeightsCount >= 2);
     const newlySecuredWeight3 = (prevEffectiveWeightsCount < 3 && effectiveWeightsCount >= 3);
-    const newlySecuredAbs = (prevAbsCount < 1 && summary.absCount >= 1);
+    const newlySecuredAbs = (prevEffectiveAbsCount < 1 && effectiveAbsCount >= 1);
 
     return { newlySecuredWeight2, newlySecuredWeight3, newlySecuredAbs };
 
   }, [getWeekSummary, initWeekSummary, updateWeekSummary]);
 
-  const applyCarryoverCredit = useCallback(() => {
+  const applyCarryoverCredit = useCallback((streakType: "weights" | "abs") => {
     setStreakState(prevStreakState => {
-      if (prevStreakState.weightCarryoverCredits <= 0) {
+      if (prevStreakState.generalCarryoverCredits <= 0) {
         toast.error("No carryover credits available.");
         return prevStreakState;
       }
 
       let currentSummary = getWeekSummary(currentWeekId) || initWeekSummary(currentWeekId);
 
-      if (currentSummary.carryoverApplied) {
-        toast.info("Carryover credit already applied for this week.");
+      if (streakType === "weights" && currentSummary.weightsCarryoverApplied) {
+        toast.info("Carryover credit already applied to weights for this week.");
+        return prevStreakState;
+      }
+      if (streakType === "abs" && currentSummary.absCarryoverApplied) {
+        toast.info("Carryover credit already applied to abs for this week.");
         return prevStreakState;
       }
 
-      currentSummary.carryoverApplied = true;
+      if (streakType === "weights") {
+        currentSummary.weightsCarryoverApplied = true;
+      } else if (streakType === "abs") {
+        currentSummary.absCarryoverApplied = true;
+      }
       currentSummary.updatedAt = new Date().toISOString();
       updateWeekSummary(currentSummary);
 
-      toast.success("Carryover credit applied!", {
-        description: "This week will count as +1 weight session for streak qualification.",
+      toast.success(`Carryover credit applied to ${streakType}!`, {
+        description: `This week will count as +1 ${streakType} session for streak qualification.`,
       });
 
       return {
         ...prevStreakState,
-        weightCarryoverCredits: prevStreakState.weightCarryoverCredits - 1,
+        generalCarryoverCredits: prevStreakState.generalCarryoverCredits - 1,
       };
     });
   }, [currentWeekId, getWeekSummary, initWeekSummary, updateWeekSummary, setStreakState]);
@@ -277,11 +303,12 @@ export function useStreakData() {
     return getWeekSummary(currentWeekId) || initWeekSummary(currentWeekId);
   }, [currentWeekId, getWeekSummary, initWeekSummary]);
 
-  const effectiveWeightsCountThisWeek = currentWeekSummary.weightsCount + (currentWeekSummary.carryoverApplied ? 1 : 0);
+  const effectiveWeightsCountThisWeek = currentWeekSummary.weightsCount + (currentWeekSummary.weightsCarryoverApplied ? 1 : 0);
+  const effectiveAbsCountThisWeek = currentWeekSummary.absCount + (currentWeekSummary.absCarryoverApplied ? 1 : 0);
 
   const provisionalWeight2Current = streakState.weight2Current + (effectiveWeightsCountThisWeek >= 2 ? 1 : 0);
   const provisionalWeight3Current = streakState.weight3Current + (effectiveWeightsCountThisWeek >= 3 ? 1 : 0);
-  const provisionalAbsCurrent = streakState.absCurrent + (currentWeekSummary.absCount >= 1 ? 1 : 0);
+  const provisionalAbsCurrent = streakState.absCurrent + (effectiveAbsCountThisWeek >= 1 ? 1 : 0);
 
   const getNextMilestone = useCallback((bestStreak: number) => {
     return MILESTONE_THRESHOLDS.find(m => m > bestStreak) || MILESTONE_THRESHOLDS[MILESTONE_THRESHOLDS.length - 1];
@@ -299,6 +326,7 @@ export function useStreakData() {
     finalizeUpToCurrentWeek,
     applyCarryoverCredit,
     effectiveWeightsCountThisWeek,
+    effectiveAbsCountThisWeek, // Export new effective count
     getNextMilestone,
   };
 }

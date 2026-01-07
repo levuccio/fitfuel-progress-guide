@@ -29,7 +29,7 @@ import { isAfter, startOfWeek, endOfWeek } from "date-fns";
 import { formatDurationShort } from "@/lib/utils";
 import { LogActivityDialog } from "@/components/activity/LogActivityDialog";
 import { LogSquashDialog } from "@/components/activity/LogSquashDialog";
-// Removed StreakDisplay import
+import { CompactStreakChips } from "@/components/streak/CompactStreakChips"; // Import CompactStreakChips
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
@@ -148,6 +148,11 @@ export default function WorkoutsPage() {
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">New Template</span>
         </Button>
+      </div>
+
+      {/* Compact Streak Chips */}
+      <div className="-mx-4 px-4 md:-mx-6 md:px-6 border-b border-border/50 pb-4">
+        <CompactStreakChips />
       </div>
 
       {activeSession && (

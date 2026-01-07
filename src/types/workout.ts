@@ -75,8 +75,9 @@ export interface WeekSummary {
   weekId: string; // YYYY-Www
   weightsCount: number;
   absCount: number;
-  carryoverApplied: boolean; // True if a carryover credit was applied this week
-  carryoverEarnedThisWeek: boolean; // True if weightsCount >= 4 this week
+  weightsCarryoverApplied: boolean; // New: True if a carryover credit was applied to weights this week
+  absCarryoverApplied: boolean;     // New: True if a carryover credit was applied to abs this week
+  carryoverEarnedThisWeek: boolean; // True if weightsCount >= 4 this week (earns a general credit)
   finalized: boolean;       // once the week is rolled over
   updatedAt: string;
 }
@@ -95,7 +96,7 @@ export interface StreakState {
   weight3SaveTokens: number;
   absSaveTokens: number;
 
-  weightCarryoverCredits: number;
+  generalCarryoverCredits: number; // Renamed from weightCarryoverCredits
 
   lastFinalizedWeekId?: string; // latest week that has been finalized
 

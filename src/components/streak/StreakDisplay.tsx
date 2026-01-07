@@ -1,24 +1,35 @@
 import { useStreakData } from "@/hooks/useStreakData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, XCircle, Flame, Trophy, ShieldCheck, Zap, Dumbbell, HeartPulse, PlusCircle } from "lucide-react";
+import { CheckCircle, XCircle, Flame, Trophy, ShieldCheck, Zap, PlusCircle } from "lucide-react"; // Changed to Zap icon
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 
 export function StreakDisplay() {
-  const { currentWeekSummary, streakState, effectiveWeightsCountThisWeek, applyCarryoverCredit, getNextMilestone } = useStreakData();
+  const { 
+    currentWeekSummary, 
+    streakState, 
+    effectiveWeightsCountThisWeek, 
+    effectiveAbsCountThisWeek, // New effective abs count
+    applyCarryoverCredit, 
+    getNextMilestone 
+  } = useStreakData();
+
+  const [selectedCarryoverType, setSelectedCarryoverType] = useState<"weights" | "abs">("weights");
 
   const provisionalWeight2Current = streakState.weight2Current + (effectiveWeightsCountThisWeek >= 2 ? 1 : 0);
   const provisionalWeight3Current = streakState.weight3Current + (effectiveWeightsCountThisWeek >= 3 ? 1 : 0);
-  const provisionalAbsCurrent = streakState.absCurrent + (currentWeekSummary.absCount >= 1 ? 1 : 0);
+  const provisionalAbsCurrent = streakState.absCurrent + (effectiveAbsCountThisWeek >= 1 ? 1 : 0);
 
   const weight2Progress = Math.min(100, (effectiveWeightsCountThisWeek / 2) * 100);
   const weight3Progress = Math.min(100, (effectiveWeightsCountThisWeek / 3) * 100);
-  const absProgress = Math.min(100, (currentWeekSummary.absCount / 1) * 100);
+  const absProgress = Math.min(100, (effectiveAbsCountThisWeek / 1) * 100); // Use effectiveAbsCountThisWeek
 
   const weight2Qualified = effectiveWeightsCountThisWeek >= 2;
   const weight3Qualified = effectiveWeightsCountThisWeek >= 3;
-  const absQualified = currentWeekSummary.absCount >= 1;
+  const absQualified = effectiveAbsCountThisWeek >= 1; // Use effectiveAbsCountThisWeek
 
   const nextWeight2Milestone = getNextMilestone(streakState.weight2Best);
   const nextWeight3Milestone = getNextMilestone(streakState.weight3Best);
@@ -40,7 +51,7 @@ export function StreakDisplay() {
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-muted-foreground flex items-center gap-1">
-                  <Dumbbell className="h-4 w-4" /> Weights ({currentWeekSummary.weightsCount}{currentWeekSummary.carryoverApplied ? "+1" : ""}/3)
+                  <Zap className="h-4 w-4 text-yellow-500" /> Weights ({currentWeekSummary.weightsCount}{currentWeekSummary.weightsCarryoverApplied ? "+1" : ""}/3)
                 </span>
                 <span className="font-medium">{weight3Progress.toFixed(0)}%</span>
               </div>
@@ -49,7 +60,7 @@ export function StreakDisplay() {
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-muted-foreground flex items-center gap-1">
-                  <HeartPulse className="h-4 w-4" /> Abs ({currentWeekSummary.absCount}/1)
+                  <Zap className="h-4 w-4 text-green-500" /> Abs ({currentWeekSummary.absCount}{currentWeekSummary.absCarryoverApplied ? "+1" : ""}/1)
                 </span>
                 <span className="font-medium">{absProgress.toFixed(0)}%</span>
               </div>
@@ -94,7 +105,7 @@ export function StreakDisplay() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-              <ShieldCheck className="h-4 w-4 text-blue-500" /> 2x Weights Streak
+              <Zap className="h-4 w-4 text-red-500" /> 2x Weights Streak
             </h4>
             <div className="text-2xl font-bold text-foreground">{provisionalWeight2Current} <span className="text-base text-muted-foreground">weeks</span></div>
             <p className="text-xs text-muted-foreground">Best: {streakState.weight2Best} weeks</p>
@@ -104,7 +115,7 @@ export function StreakDisplay() {
           </div>
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-              <Trophy className="h-4 w-4 text-yellow-500" /> 3x Weights Streak
+              <Zap className="h-4 w-4 text-yellow-500" /> 3x Weights Streak
             </h4>
             <div className="text-2xl font-bold text-foreground">{provisionalWeight3Current} <span className="text-base text-muted-foreground">weeks</span></div>
             <p className="text-xs text-muted-foreground">Best: {streakState.weight3Best} weeks</p>
@@ -114,7 +125,7 @@ export function StreakDisplay() {
           </div>
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-              <HeartPulse className="h-4 w-4 text-green-500" /> Abs Streak
+              <Zap className="h-4 w-4 text-green-500" /> Abs Streak
             </h4>
             <div className="text-2xl font-bold text-foreground">{provisionalAbsCurrent} <span className="text-base text-muted-foreground">weeks</span></div>
             <p className="text-xs text-muted-foreground">Best: {streakState.absBest} weeks</p>
@@ -134,15 +145,15 @@ export function StreakDisplay() {
           </p>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div className="flex items-center gap-1.5">
-              <Dumbbell className="h-4 w-4 text-blue-500" />
+              <Zap className="h-4 w-4 text-red-500" />
               <span>2x: {streakState.weight2SaveTokens}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Dumbbell className="h-4 w-4 text-yellow-500" />
+              <Zap className="h-4 w-4 text-yellow-500" />
               <span>3x: {streakState.weight3SaveTokens}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <HeartPulse className="h-4 w-4 text-green-500" />
+              <Zap className="h-4 w-4 text-green-500" />
               <span>Abs: {streakState.absSaveTokens}</span>
             </div>
           </div>
@@ -155,16 +166,36 @@ export function StreakDisplay() {
             <span>You earned 1 carryover credit this week!</span>
           </div>
         )}
-        {streakState.weightCarryoverCredits > 0 && !currentWeekSummary.carryoverApplied && (
+        {streakState.generalCarryoverCredits > 0 && (!currentWeekSummary.weightsCarryoverApplied || !currentWeekSummary.absCarryoverApplied) && (
           <Card className="glass-card border-blue-500/50 bg-blue-500/5">
-            <CardContent className="p-4 flex items-center justify-between">
+            <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm text-blue-500">
                 <PlusCircle className="h-5 w-5" />
-                <span>You have {streakState.weightCarryoverCredits} carryover weight credit{streakState.weightCarryoverCredits > 1 ? "s" : ""}. Apply it to this week to count as +1 weight session.</span>
+                <span>You have {streakState.generalCarryoverCredits} carryover credit{streakState.generalCarryoverCredits > 1 ? "s" : ""}. Apply it to count as +1 session for:</span>
               </div>
-              <Button onClick={applyCarryoverCredit} variant="outline" size="sm" className="text-blue-500 border-blue-500 hover:bg-blue-500/10">
-                Apply Credit
-              </Button>
+              <div className="flex items-center gap-2">
+                <Select value={selectedCarryoverType} onValueChange={(value: "weights" | "abs") => setSelectedCarryoverType(value)}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {!currentWeekSummary.weightsCarryoverApplied && <SelectItem value="weights">Weights</SelectItem>}
+                    {!currentWeekSummary.absCarryoverApplied && <SelectItem value="abs">Abs</SelectItem>}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  onClick={() => applyCarryoverCredit(selectedCarryoverType)} 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-blue-500 border-blue-500 hover:bg-blue-500/10"
+                  disabled={
+                    (selectedCarryoverType === "weights" && currentWeekSummary.weightsCarryoverApplied) ||
+                    (selectedCarryoverType === "abs" && currentWeekSummary.absCarryoverApplied)
+                  }
+                >
+                  Apply
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

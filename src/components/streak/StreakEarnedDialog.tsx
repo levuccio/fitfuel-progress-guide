@@ -68,20 +68,20 @@ export function StreakEarnedDialog({
         </DialogHeader>
         <div className="py-4 space-y-4">
           {newlySecuredWeight2 && (
-            <div className="flex items-center justify-center gap-2 text-lg font-semibold text-blue-500">
-              <Dumbbell className="h-6 w-6" />
+            <div className="flex items-center justify-center gap-2 text-lg font-semibold text-red-500">
+              <Zap className="h-6 w-6" />
               <span>2x Weights Streak: {weight2Current} weeks!</span>
             </div>
           )}
           {newlySecuredWeight3 && (
             <div className="flex items-center justify-center gap-2 text-lg font-semibold text-yellow-500">
-              <Dumbbell className="h-6 w-6" />
+              <Zap className="h-6 w-6" />
               <span>3x Weights Streak: {weight3Current} weeks!</span>
             </div>
           )}
           {newlySecuredAbs && (
             <div className="flex items-center justify-center gap-2 text-lg font-semibold text-green-500">
-              <HeartPulse className="h-6 w-6" />
+              <Zap className="h-6 w-6" />
               <span>Abs Streak: {absCurrent} weeks!</span>
             </div>
           )}

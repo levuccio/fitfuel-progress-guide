@@ -1,4 +1,4 @@
-import { getISOWeek, getISOWeekYear, addWeeks, subWeeks, format, startOfWeek, endOfWeek } from "date-fns";
+import { getISOWeek, getISOWeekYear, addWeeks, subWeeks, format, startOfWeek, endOfWeek, isBefore } from "date-fns";
 import { toZonedTime } from "date-fns-tz"; // Updated import to toZonedTime
 
 // Helper to get the user's current timezone
@@ -18,74 +18,55 @@ export function getWeekId(date: Date, tz: string): string {
 }
 
 /**
- * Returns the previous week's ID.
+ * Helper to convert YYYY-Www to a Date object (e.g., the Monday of that week).
+ * This is crucial for consistent date-fns operations.
  */
-export function prevWeekId(weekId: string): string {
+function weekIdToDate(weekId: string): Date {
   const [yearStr, weekStr] = weekId.split('-W');
   const year = parseInt(yearStr);
   const week = parseInt(weekStr);
+  // ISO week 1 contains Jan 4th. We can find the Monday of week 1, then add (week-1) weeks.
+  const jan4 = new Date(year, 0, 4);
+  const startOfFirstISOWeek = startOfWeek(jan4, { weekStartsOn: 1 });
+  return addWeeks(startOfFirstISOWeek, week - 1);
+}
 
-  // Create a date within that week (e.g., Wednesday to avoid edge cases with week start/end)
-  // We need a reference date to subtract a week using date-fns
-  // For ISO weeks, week 1 always contains Jan 4th.
-  // So, we can construct a date like: new Date(year, 0, 4 + (week - 1) * 7)
-  // Then subtract a week.
-  const dateInWeek = new Date(year, 0, 4); // Jan 4th of the year
-  const firstWeekIdOfYear = getWeekId(dateInWeek, 'UTC'); // Get weekId for Jan 4th
-
-  let currentWeekStartDate: Date;
-  if (firstWeekIdOfYear === weekId) {
-    // If it's the first week of the year, we need to go back to the last week of the previous year
-    currentWeekStartDate = startOfWeek(new Date(year, 0, 1), { weekStartsOn: 1 });
-  } else {
-    // Otherwise, calculate a date within the target week
-    currentWeekStartDate = addWeeks(startOfWeek(new Date(year, 0, 4), { weekStartsOn: 1 }), week - getISOWeek(new Date(year, 0, 4)));
-  }
-  
-  const prevWeekDate = subWeeks(currentWeekStartDate, 1);
-  return getWeekId(prevWeekDate, 'UTC'); // Use UTC for internal calculation consistency, as getWeekId handles tz
+/**
+ * Returns the previous week's ID.
+ */
+export function prevWeekId(weekId: string): string {
+  const dateInWeek = weekIdToDate(weekId);
+  const prevWeekDate = subWeeks(dateInWeek, 1);
+  return getWeekId(prevWeekDate, 'UTC'); // Use UTC for internal consistency
 }
 
 
 /**
  * Returns an array of week IDs between two week IDs (exclusive of start, inclusive of end).
  * E.g., getWeekIdsBetween("2023-W01", "2023-W03") => ["2023-W02", "2023-W03"]
+ * If startWeekId is undefined, it returns [endWeekId].
  */
 export function getWeekIdsBetween(startWeekId: string | undefined, endWeekId: string): string[] {
+  const weekIds: string[] = [];
+  let currentWeekDate: Date;
+
   if (!startWeekId) {
-    // If no lastFinalizedWeekId, we start from the beginning of the endWeekId
-    return [endWeekId];
+    // If no startWeekId, we want to include the endWeekId itself.
+    // To do this with the loop structure, we start from the week *before* endWeekId.
+    currentWeekDate = subWeeks(weekIdToDate(endWeekId), 1);
+  } else {
+    currentWeekDate = weekIdToDate(startWeekId);
   }
 
-  const weekIds: string[] = [];
-  let currentWeek = startWeekId;
+  const endWeekDate = weekIdToDate(endWeekId);
 
-  // Safety break for infinite loops in case of bad input
+  // Safety break for infinite loops
   let iterationCount = 0;
-  const MAX_ITERATIONS = 100; // Prevent infinite loops for very distant weeks
+  const MAX_ITERATIONS = 100;
 
-  while (currentWeek !== endWeekId && iterationCount < MAX_ITERATIONS) {
-    // Calculate the next week ID
-    const [yearStr, weekStr] = currentWeek.split('-W');
-    const year = parseInt(yearStr);
-    const week = parseInt(weekStr);
-
-    // Get a date within the current week (e.g., Wednesday)
-    const dateInCurrentWeek = new Date(year, 0, 4); // Jan 4th of the year
-    const firstWeekIdOfYear = getWeekId(dateInCurrentWeek, 'UTC');
-
-    let currentWeekStartDate: Date;
-    if (firstWeekIdOfYear === currentWeek) {
-      currentWeekStartDate = startOfWeek(new Date(year, 0, 1), { weekStartsOn: 1 });
-    } else {
-      currentWeekStartDate = addWeeks(startOfWeek(new Date(year, 0, 4), { weekStartsOn: 1 }), week - getISOWeek(new Date(year, 0, 4)));
-    }
-
-    const nextWeekDate = addWeeks(currentWeekStartDate, 1);
-    const nextWeekId = getWeekId(nextWeekDate, 'UTC'); // Use UTC for internal calculation consistency
-
-    weekIds.push(nextWeekId);
-    currentWeek = nextWeekId;
+  while (isBefore(currentWeekDate, endWeekDate) && iterationCount < MAX_ITERATIONS) {
+    currentWeekDate = addWeeks(currentWeekDate, 1);
+    weekIds.push(getWeekId(currentWeekDate, 'UTC'));
     iterationCount++;
   }
 
