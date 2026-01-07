@@ -10,7 +10,6 @@ import { RestTimer } from "@/components/workout/RestTimer";
 import { ExerciseProgressChart } from "@/components/workout/ExerciseProgressChart";
 import { SetLog, WorkoutSession, StreakState } from "@/types/workout";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -83,7 +82,9 @@ export default function WorkoutSessionPage() {
   useEffect(() => {
     if (!activeSession || activeSession.status !== "in_progress") return;
     const interval = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - new Date(activeSession.startTime).getTime()) / 1000));
+      setElapsedTime(
+        Math.floor((Date.now() - new Date(activeSession.startTime).getTime()) / 1000)
+      );
     }, 1000);
     return () => clearInterval(interval);
   }, [activeSession]);
@@ -95,7 +96,10 @@ export default function WorkoutSessionPage() {
   }
 
   const totalSets = sessionForRender.exercises.reduce((a, e) => a + e.sets.length, 0);
-  const completedSets = sessionForRender.exercises.reduce((a, e) => a + e.sets.filter((s) => s.completed).length, 0);
+  const completedSets = sessionForRender.exercises.reduce(
+    (a, e) => a + e.sets.filter((s) => s.completed).length,
+    0
+  );
   const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
 
   const formatTime = (secs: number) => {
@@ -117,7 +121,8 @@ export default function WorkoutSessionPage() {
     updateActiveSession({ ...activeSession, exercises: updatedExercises });
 
     if (wasJustCompleted) {
-      const exerciseRestSeconds = activeSession.exercises.find((ex) => ex.id === exerciseId)?.restSeconds || 60;
+      const exerciseRestSeconds =
+        activeSession.exercises.find((ex) => ex.id === exerciseId)?.restSeconds || 60;
       const isLastSetOfExercise = updatedSet.setNumber === (currentExercise?.sets.length || 0);
 
       setRestDuration(isLastSetOfExercise ? 60 : exerciseRestSeconds);
@@ -135,19 +140,28 @@ export default function WorkoutSessionPage() {
 
     setSessionSnapshot(activeSession);
 
-    const prevStreakState: StreakState = safeParseJson(localStorage.getItem("fittrack_streak_state"), {} as StreakState);
+    const prevStreakState: StreakState = safeParseJson(
+      localStorage.getItem("fittrack_streak_state"),
+      {} as StreakState
+    );
 
     const result = completeSession();
     if (!result) return;
 
     const { completedSession, streakQualification } = result;
 
-    const newStreakState: StreakState = safeParseJson(localStorage.getItem("fittrack_streak_state"), {} as StreakState);
+    const newStreakState: StreakState = safeParseJson(
+      localStorage.getItem("fittrack_streak_state"),
+      {} as StreakState
+    );
 
-    // Compute qualification for THIS WEEK immediately from sessions (no dependency on async week summary rebuilding)
-    const allSessions: WorkoutSession[] = safeParseJson(localStorage.getItem("fittrack_sessions"), []);
+    const allSessions: WorkoutSession[] = safeParseJson(
+      localStorage.getItem("fittrack_sessions"),
+      []
+    );
     const tz = completedSession.tz || getUserTimezone();
-    const completedAt = completedSession.completedAt || completedSession.endTime || completedSession.startTime;
+    const completedAt =
+      completedSession.completedAt || completedSession.endTime || completedSession.startTime;
     const weekId = getWeekId(new Date(completedAt), tz);
 
     const sessionsInWeek = allSessions.filter((s) => {
@@ -177,17 +191,26 @@ export default function WorkoutSessionPage() {
     const newlySecuredAbs = streakQualification?.newlySecuredAbs || false;
 
     const weight2MilestoneReached =
-      newStreakState.weight2Best > (prevStreakState.weight2Best || 0) ? newStreakState.weight2Best : undefined;
+      newStreakState.weight2Best > (prevStreakState.weight2Best || 0)
+        ? newStreakState.weight2Best
+        : undefined;
     const weight3MilestoneReached =
-      newStreakState.weight3Best > (prevStreakState.weight3Best || 0) ? newStreakState.weight3Best : undefined;
+      newStreakState.weight3Best > (prevStreakState.weight3Best || 0)
+        ? newStreakState.weight3Best
+        : undefined;
     const absMilestoneReached =
-      newStreakState.absBest > (prevStreakState.absBest || 0) ? newStreakState.absBest : undefined;
+      newStreakState.absBest > (prevStreakState.absBest || 0)
+        ? newStreakState.absBest
+        : undefined;
 
-    const weight2SaveTokensEarned = (newStreakState.weight2SaveTokens || 0) - (prevStreakState.weight2SaveTokens || 0);
-    const weight3SaveTokensEarned = (newStreakState.weight3SaveTokens || 0) - (prevStreakState.weight3SaveTokens || 0);
-    const absSaveTokensEarned = (newStreakState.absSaveTokens || 0) - (prevStreakState.absSaveTokens || 0);
+    const weight2SaveTokensEarned =
+      (newStreakState.weight2SaveTokens || 0) - (prevStreakState.weight2SaveTokens || 0);
+    const weight3SaveTokensEarned =
+      (newStreakState.weight3SaveTokens || 0) - (prevStreakState.weight3SaveTokens || 0);
+    const absSaveTokensEarned =
+      (newStreakState.absSaveTokens || 0) - (prevStreakState.absSaveTokens || 0);
 
-    if (
+    const shouldShowDialog =
       newlySecuredWeight2 ||
       newlySecuredWeight3 ||
       newlySecuredAbs ||
@@ -196,8 +219,9 @@ export default function WorkoutSessionPage() {
       absMilestoneReached ||
       weight2SaveTokensEarned > 0 ||
       weight3SaveTokensEarned > 0 ||
-      absSaveTokensEarned > 0
-    ) {
+      absSaveTokensEarned > 0;
+
+    if (shouldShowDialog) {
       setStreakDialogProps({
         newlySecuredWeight2,
         newlySecuredWeight3,
@@ -214,7 +238,6 @@ export default function WorkoutSessionPage() {
       });
       setIsStreakEarnedDialogOpen(true);
     } else {
-      toast.success("Workout Complete!", { description: `${completedSets}/${totalSets} sets in ${formatTime(elapsedTime)}` });
       navigate("/");
     }
   };
@@ -242,7 +265,11 @@ export default function WorkoutSessionPage() {
           <h1 className="text-xl font-bold">{sessionForRender.templateName}</h1>
           <p className="text-sm text-muted-foreground">{formatTime(elapsedTime)} elapsed</p>
         </div>
-        <Button onClick={() => setIsCompleteWorkoutDialogOpen(true)} className="h-9 px-4" disabled={completedSets === 0}>
+        <Button
+          onClick={() => setIsCompleteWorkoutDialogOpen(true)}
+          className="h-9 px-4"
+          disabled={completedSets === 0}
+        >
           <Check className="h-4 w-4 mr-2" /> Complete
         </Button>
       </div>
@@ -271,8 +298,14 @@ export default function WorkoutSessionPage() {
           );
 
           return (
-            <Card key={exercise.id} className={cn("glass-card", exerciseCompleted && "border-success/50")}>
-              <CardHeader className="p-4 cursor-pointer" onClick={() => setExpandedExercise(isExpanded ? null : exercise.id)}>
+            <Card
+              key={exercise.id}
+              className={cn("glass-card", exerciseCompleted && "border-success/50")}
+            >
+              <CardHeader
+                className="p-4 cursor-pointer"
+                onClick={() => setExpandedExercise(isExpanded ? null : exercise.id)}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base">{exercise.exercise.name}</CardTitle>
@@ -292,7 +325,10 @@ export default function WorkoutSessionPage() {
 
                   {lastData && !isAbsExercise && (
                     <p className="text-xs text-muted-foreground mb-2">
-                      Last: {lastData.sets.map((s) => `${s.weight}kg×${s.reps}`).join(", ")}
+                      Last:{" "}
+                      {lastData.sets
+                        .map((s) => `${s.weight}kg×${s.reps}`)
+                        .join(", ")}
                     </p>
                   )}
 
@@ -315,7 +351,12 @@ export default function WorkoutSessionPage() {
       {isResting && (
         <div className="fixed bottom-0 left-0 right-0 p-4 md:pl-68 bg-background border-t border-border/50 safe-bottom z-50">
           <div className="max-w-4xl mx-auto">
-            <RestTimer key={restTimerKey} initialSeconds={restDuration} onComplete={handleRestTimerComplete} autoStart />
+            <RestTimer
+              key={restTimerKey}
+              initialSeconds={restDuration}
+              onComplete={handleRestTimerComplete}
+              autoStart
+            />
           </div>
         </div>
       )}
@@ -325,7 +366,8 @@ export default function WorkoutSessionPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Complete Workout?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to complete this workout? You have completed {completedSets} out of {totalSets} sets.
+              Are you sure you want to complete this workout? You have completed {completedSets} out
+              of {totalSets} sets.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -335,7 +377,11 @@ export default function WorkoutSessionPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <StreakEarnedDialog isOpen={isStreakEarnedDialogOpen} onClose={handleCloseStreakDialog} {...streakDialogProps} />
+      <StreakEarnedDialog
+        isOpen={isStreakEarnedDialogOpen}
+        onClose={handleCloseStreakDialog}
+        {...streakDialogProps}
+      />
     </div>
   );
 }

@@ -16,10 +16,9 @@ import { formatDistanceToNow, format } from "date-fns";
 import { Clock, CheckCircle, XCircle, Dumbbell, Pencil, Trash2, Bike, Gamepad } from "lucide-react";
 import { formatDurationShort } from "@/lib/utils";
 import { useState, useMemo } from "react";
-import { toast } from "sonner";
 import { EditDurationDialog } from "@/components/EditDurationDialog";
-import { SessionDetailsDialog } from "@/components/workout/SessionDetailsDialog"; // Import the new dialog
-import { WorkoutSession } from "@/types/workout"; // Import WorkoutSession type
+import { SessionDetailsDialog } from "@/components/workout/SessionDetailsDialog";
+import { WorkoutSession } from "@/types/workout";
 
 type HistoryEntry = {
   id: string;
@@ -32,12 +31,19 @@ type HistoryEntry = {
   completedSets?: number;
   totalSets?: number;
   winner?: "Aleksej" | "Andreas";
-  originalSession?: WorkoutSession; // Add originalSession for editing
+  originalSession?: WorkoutSession;
 };
 
 export default function HistoryPage() {
   const { sessions, updateSessionDuration, deleteSession, updateSession, getLastSessionData } = useWorkoutData();
-  const { activityLogs, squashGames, updateActivityLogDuration, deleteActivityLog, updateSquashGameDuration, deleteSquashGame } = useActivityData();
+  const {
+    activityLogs,
+    squashGames,
+    updateActivityLogDuration,
+    deleteActivityLog,
+    updateSquashGameDuration,
+    deleteSquashGame,
+  } = useActivityData();
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<HistoryEntry | null>(null);
@@ -45,15 +51,15 @@ export default function HistoryPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingEntry, setDeletingEntry] = useState<HistoryEntry | null>(null);
 
-  const [isSessionDetailsDialogOpen, setIsSessionDetailsDialogOpen] = useState(false); // New state for session details dialog
-  const [sessionToEdit, setSessionToEdit] = useState<WorkoutSession | null>(null); // New state for session being edited
+  const [isSessionDetailsDialogOpen, setIsSessionDetailsDialogOpen] = useState(false);
+  const [sessionToEdit, setSessionToEdit] = useState<WorkoutSession | null>(null);
 
   const allHistoryEntries = useMemo(() => {
     const workoutEntries: HistoryEntry[] = sessions
-      .filter(s => s.status === "completed")
-      .map(session => {
+      .filter((s) => s.status === "completed")
+      .map((session) => {
         const completedSets = session.exercises.reduce(
-          (acc, ex) => acc + ex.sets.filter(s => s.completed).length,
+          (acc, ex) => acc + ex.sets.filter((s2) => s2.completed).length,
           0
         );
         const totalSets = session.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
@@ -66,20 +72,20 @@ export default function HistoryPage() {
           status: session.status,
           completedSets,
           totalSets,
-          originalSession: session, // Store the full session object
+          originalSession: session,
         };
       });
 
-    const cyclingEntries: HistoryEntry[] = activityLogs.map(log => ({
+    const cyclingEntries: HistoryEntry[] = activityLogs.map((log) => ({
       id: log.id,
       type: "cycling",
       date: log.date,
       durationSeconds: log.durationMinutes * 60,
       name: "Cycling Session",
-      details: "Outdoor ride", // Example detail
+      details: "Outdoor ride",
     }));
 
-    const squashEntries: HistoryEntry[] = squashGames.map(game => ({
+    const squashEntries: HistoryEntry[] = squashGames.map((game) => ({
       id: game.id,
       type: "squash",
       date: game.date,
@@ -114,7 +120,6 @@ export default function HistoryPage() {
         updateSquashGameDuration(editingEntry.id, newDurationMinutes);
         break;
     }
-    toast.success(`${editingEntry.name} duration updated!`);
     setIsEditDialogOpen(false);
     setEditingEntry(null);
   };
@@ -129,7 +134,6 @@ export default function HistoryPage() {
 
     switch (deletingEntry.type) {
       case "workout":
-        // Pass the full session object for streak recalculation
         if (deletingEntry.originalSession) {
           deleteSession(deletingEntry.originalSession);
         }
@@ -141,7 +145,6 @@ export default function HistoryPage() {
         deleteSquashGame(deletingEntry.id);
         break;
     }
-    toast.success(`${deletingEntry.name} deleted!`);
     setIsDeleteDialogOpen(false);
     setDeletingEntry(null);
   };
@@ -153,7 +156,6 @@ export default function HistoryPage() {
 
   const handleSaveSessionChanges = (updatedSession: WorkoutSession) => {
     updateSession(updatedSession);
-    toast.success(`${updatedSession.templateName} session updated!`);
   };
 
   if (allHistoryEntries.length === 0) {
@@ -163,7 +165,7 @@ export default function HistoryPage() {
           <h1 className="text-2xl font-bold text-foreground">History</h1>
           <p className="text-muted-foreground">Your past workout sessions and activities</p>
         </div>
-        
+
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
             <Dumbbell className="w-8 h-8 text-muted-foreground" />
@@ -219,18 +221,25 @@ export default function HistoryPage() {
                   </Button>
                 </div>
 
-                {entry.type === "workout" && entry.completedSets !== undefined && entry.totalSets !== undefined && (
-                  <div className="flex items-center gap-1.5">
-                    {entry.completedSets === entry.totalSets ? (
-                      <CheckCircle className="h-4 w-4 text-success" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-warning" />
-                    )}
-                    <span className={entry.completedSets === entry.totalSets ? "text-success" : "text-warning"}>
-                      {entry.completedSets}/{entry.totalSets} sets ({Math.round((entry.completedSets / entry.totalSets) * 100)}%)
-                    </span>
-                  </div>
-                )}
+                {entry.type === "workout" &&
+                  entry.completedSets !== undefined &&
+                  entry.totalSets !== undefined && (
+                    <div className="flex items-center gap-1.5">
+                      {entry.completedSets === entry.totalSets ? (
+                        <CheckCircle className="h-4 w-4 text-success" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-warning" />
+                      )}
+                      <span
+                        className={
+                          entry.completedSets === entry.totalSets ? "text-success" : "text-warning"
+                        }
+                      >
+                        {entry.completedSets}/{entry.totalSets} sets (
+                        {Math.round((entry.completedSets / entry.totalSets) * 100)}%)
+                      </span>
+                    </div>
+                  )}
 
                 {entry.type === "squash" && entry.winner && (
                   <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -279,7 +288,7 @@ export default function HistoryPage() {
           onClose={() => setIsSessionDetailsDialogOpen(false)}
           session={sessionToEdit}
           onSave={handleSaveSessionChanges}
-          lastSessionData={getLastSessionData(sessionToEdit.templateId)} // Pass last session data for comparison
+          lastSessionData={getLastSessionData(sessionToEdit.templateId)}
         />
       )}
 
@@ -288,12 +297,16 @@ export default function HistoryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {deletingEntry?.name}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this {deletingEntry?.type} entry? This action cannot be undone.
+              Are you sure you want to delete this {deletingEntry?.type} entry? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
