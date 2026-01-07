@@ -37,12 +37,9 @@ function getSessionTimezone(session: WorkoutSession, tzFallback: string) {
 }
 
 function getNextWeekId(currentWeekId: string) {
-  // weekIdToDate lives inside date-utils.ts and is not exported,
-  // so we approximate "next week id" by using today's week and adding 1 week.
-  // This is only used for applying to next week relative to "now".
   const tz = getUserTimezone();
   const thisWeek = getWeekId(new Date(), tz);
-  if (thisWeek !== currentWeekId) return prevWeekId(currentWeekId); // safety fallback (shouldn't happen)
+  if (thisWeek !== currentWeekId) return prevWeekId(currentWeekId);
   return getWeekId(addWeeks(new Date(), 1), tz);
 }
 
@@ -70,34 +67,45 @@ export function useStreakData() {
   const userTimezone = useMemo(getUserTimezone, []);
   const currentWeekId = useMemo(() => getWeekId(new Date(), userTimezone), [userTimezone]);
 
-  const getWeekSummary = useCallback((weekId: string): WeekSummary | undefined => {
-    return weekSummaries.find((ws) => ws.userId === USER_ID && ws.weekId === weekId);
-  }, [weekSummaries]);
+  const getWeekSummary = useCallback(
+    (weekId: string): WeekSummary | undefined => {
+      return weekSummaries.find((ws) => ws.userId === USER_ID && ws.weekId === weekId);
+    },
+    [weekSummaries]
+  );
 
-  const updateWeekSummary = useCallback((summary: WeekSummary) => {
-    setWeekSummaries((prev) => {
-      const existingIndex = prev.findIndex((ws) => ws.userId === summary.userId && ws.weekId === summary.weekId);
-      if (existingIndex > -1) {
-        const next = [...prev];
-        next[existingIndex] = summary;
-        return next;
-      }
-      return [...prev, summary];
-    });
-  }, [setWeekSummaries]);
+  const updateWeekSummary = useCallback(
+    (summary: WeekSummary) => {
+      setWeekSummaries((prev) => {
+        const existingIndex = prev.findIndex(
+          (ws) => ws.userId === summary.userId && ws.weekId === summary.weekId
+        );
+        if (existingIndex > -1) {
+          const next = [...prev];
+          next[existingIndex] = summary;
+          return next;
+        }
+        return [...prev, summary];
+      });
+    },
+    [setWeekSummaries]
+  );
 
-  const initWeekSummary = useCallback((weekId: string): WeekSummary => ({
-    userId: USER_ID,
-    weekId,
-    weightsCount: 0,
-    absCount: 0,
-    weightsCarryoverApplied: 0,
-    absCarryoverApplied: 0,
-    weightCreditsGranted: 0,
-    absCreditsGranted: 0,
-    finalized: false,
-    updatedAt: new Date().toISOString(),
-  }), []);
+  const initWeekSummary = useCallback(
+    (weekId: string): WeekSummary => ({
+      userId: USER_ID,
+      weekId,
+      weightsCount: 0,
+      absCount: 0,
+      weightsCarryoverApplied: 0,
+      absCarryoverApplied: 0,
+      weightCreditsGranted: 0,
+      absCreditsGranted: 0,
+      finalized: false,
+      updatedAt: new Date().toISOString(),
+    }),
+    []
+  );
 
   const awardMilestonesAndTokensIfNeeded = useCallback((currentState: StreakState) => {
     let updatedState = { ...currentState };
@@ -223,77 +231,81 @@ export function useStreakData() {
     });
   }, [awardMilestonesAndTokensIfNeeded, currentWeekId, getWeekSummary, initWeekSummary, updateWeekSummary, setStreakState]);
 
-  const applyCarryoverCredit = useCallback((type: "weights" | "abs", target: "this" | "next") => {
-    const targetWeekId = target === "this" ? currentWeekId : getNextWeekId(currentWeekId);
+  const applyCarryoverCredit = useCallback(
+    (type: "weights" | "abs", target: "this" | "next") => {
+      const targetWeekId = target === "this" ? currentWeekId : getNextWeekId(currentWeekId);
 
-    setStreakState((prevStreakState) => {
-      const hasCredit =
-        type === "weights" ? prevStreakState.weightCarryoverCredits > 0 : prevStreakState.absCarryoverCredits > 0;
+      setStreakState((prevStreakState) => {
+        const hasCredit =
+          type === "weights" ? prevStreakState.weightCarryoverCredits > 0 : prevStreakState.absCarryoverCredits > 0;
 
-      if (!hasCredit) {
-        toast.error(`No ${type} bonus tokens available.`);
-        return prevStreakState;
-      }
+        if (!hasCredit) {
+          toast.error(`No ${type} bonus tokens available.`);
+          return prevStreakState;
+        }
 
-      const summary = getWeekSummary(targetWeekId) || initWeekSummary(targetWeekId);
+        const summary = getWeekSummary(targetWeekId) || initWeekSummary(targetWeekId);
 
-      const nextSummary: WeekSummary = {
-        ...summary,
-        weightsCarryoverApplied:
-          type === "weights" ? (summary.weightsCarryoverApplied || 0) + 1 : summary.weightsCarryoverApplied || 0,
-        absCarryoverApplied:
-          type === "abs" ? (summary.absCarryoverApplied || 0) + 1 : summary.absCarryoverApplied || 0,
-        updatedAt: new Date().toISOString(),
+        const nextSummary: WeekSummary = {
+          ...summary,
+          weightsCarryoverApplied:
+            type === "weights" ? (summary.weightsCarryoverApplied || 0) + 1 : summary.weightsCarryoverApplied || 0,
+          absCarryoverApplied:
+            type === "abs" ? (summary.absCarryoverApplied || 0) + 1 : summary.absCarryoverApplied || 0,
+          updatedAt: new Date().toISOString(),
+        };
+
+        updateWeekSummary(nextSummary);
+
+        toast.success(`Applied 1 ${type} bonus token`, {
+          description: target === "this" ? "Your current week progress was updated." : "Saved for next week.",
+        });
+
+        return {
+          ...prevStreakState,
+          weightCarryoverCredits:
+            type === "weights" ? prevStreakState.weightCarryoverCredits - 1 : prevStreakState.weightCarryoverCredits,
+          absCarryoverCredits:
+            type === "abs" ? prevStreakState.absCarryoverCredits - 1 : prevStreakState.absCarryoverCredits,
+        };
+      });
+    },
+    [currentWeekId, getWeekSummary, initWeekSummary, updateWeekSummary, setStreakState]
+  );
+
+  const onWorkoutCompleted = useCallback(
+    (completedSession: WorkoutSession) => {
+      const tzFallback = getUserTimezone();
+
+      const normalizedNewSession: WorkoutSession = {
+        ...completedSession,
+        completedAt: completedSession.completedAt ?? getSessionCompletionTimestamp(completedSession),
+        tz: completedSession.tz ?? tzFallback,
+        didWeights: inferDidWeights(completedSession),
+        didAbs: inferDidAbs(completedSession),
       };
 
-      updateWeekSummary(nextSummary);
+      const weekId = getWeekId(new Date(normalizedNewSession.completedAt!), normalizedNewSession.tz!);
 
-      toast.success(`Applied 1 ${type} bonus token`, {
-        description: target === "this" ? "Your current week progress was updated." : "Saved for next week.",
-      });
+      const prevSummary = getWeekSummary(weekId) || initWeekSummary(weekId);
+
+      const prevEffectiveWeights = prevSummary.weightsCount + (prevSummary.weightsCarryoverApplied || 0);
+      const prevEffectiveAbs = prevSummary.absCount + (prevSummary.absCarryoverApplied || 0);
+
+      const nextWeightsCount = prevSummary.weightsCount + (normalizedNewSession.didWeights ? 1 : 0);
+      const nextAbsCount = prevSummary.absCount + (normalizedNewSession.didAbs ? 1 : 0);
+
+      const nextEffectiveWeights = nextWeightsCount + (prevSummary.weightsCarryoverApplied || 0);
+      const nextEffectiveAbs = nextAbsCount + (prevSummary.absCarryoverApplied || 0);
 
       return {
-        ...prevStreakState,
-        weightCarryoverCredits:
-          type === "weights" ? prevStreakState.weightCarryoverCredits - 1 : prevStreakState.weightCarryoverCredits,
-        absCarryoverCredits:
-          type === "abs" ? prevStreakState.absCarryoverCredits - 1 : prevStreakState.absCarryoverCredits,
+        newlySecuredWeight2: prevEffectiveWeights < 2 && nextEffectiveWeights >= 2,
+        newlySecuredWeight3: prevEffectiveWeights < 3 && nextEffectiveWeights >= 3,
+        newlySecuredAbs: prevEffectiveAbs < 1 && nextEffectiveAbs >= 1,
       };
-    });
-  }, [currentWeekId, getWeekSummary, initWeekSummary, updateWeekSummary]);
-
-  // Used by WorkoutSessionPage to decide whether to show the "streak earned" dialog.
-  // Note: week summaries are still derived from sessions; this only computes "newly secured" flags.
-  const onWorkoutCompleted = useCallback((completedSession: WorkoutSession) => {
-    const tzFallback = getUserTimezone();
-
-    const normalizedNewSession: WorkoutSession = {
-      ...completedSession,
-      completedAt: completedSession.completedAt ?? getSessionCompletionTimestamp(completedSession),
-      tz: completedSession.tz ?? tzFallback,
-      didWeights: inferDidWeights(completedSession),
-      didAbs: inferDidAbs(completedSession),
-    };
-
-    const weekId = getWeekId(new Date(normalizedNewSession.completedAt!), normalizedNewSession.tz!);
-
-    const prevSummary = getWeekSummary(weekId) || initWeekSummary(weekId);
-
-    const prevEffectiveWeights = prevSummary.weightsCount + (prevSummary.weightsCarryoverApplied || 0);
-    const prevEffectiveAbs = prevSummary.absCount + (prevSummary.absCarryoverApplied || 0);
-
-    const nextWeightsCount = prevSummary.weightsCount + (normalizedNewSession.didWeights ? 1 : 0);
-    const nextAbsCount = prevSummary.absCount + (normalizedNewSession.didAbs ? 1 : 0);
-
-    const nextEffectiveWeights = nextWeightsCount + (prevSummary.weightsCarryoverApplied || 0);
-    const nextEffectiveAbs = nextAbsCount + (prevSummary.absCarryoverApplied || 0);
-
-    return {
-      newlySecuredWeight2: prevEffectiveWeights < 2 && nextEffectiveWeights >= 2,
-      newlySecuredWeight3: prevEffectiveWeights < 3 && nextEffectiveWeights >= 3,
-      newlySecuredAbs: prevEffectiveAbs < 1 && nextEffectiveAbs >= 1,
-    };
-  }, [getWeekSummary, initWeekSummary]);
+    },
+    [getWeekSummary, initWeekSummary]
+  );
 
   // Migration for schema changes + legacy sessions
   useEffect(() => {
@@ -315,7 +327,6 @@ export function useStreakData() {
       })
     );
 
-    // Ensure new banks exist
     setStreakState((prev) => ({
       ...prev,
       weightCarryoverCredits: (prev as any).weightCarryoverCredits ?? (prev as any).generalCarryoverCredits ?? 0,
@@ -329,7 +340,7 @@ export function useStreakData() {
     localStorage.setItem(STREAK_MIGRATION_KEY, String(STREAK_MIGRATION_VERSION));
   }, [setSessions, setStreakState]);
 
-  // ALWAYS derive week summaries from sessions (history is source of truth) + grant weekly bonus tokens
+  // Derive week summaries from sessions + grant weekly bonus credits deterministically
   useEffect(() => {
     const completed = sessions.filter((s) => s.status === "completed");
     const tzFallback = getUserTimezone();
@@ -346,7 +357,7 @@ export function useStreakData() {
       byWeek.set(weekId, cur);
     }
 
-    // Update summaries (keep applied counts)
+    // 1) Update summaries (keep applied counts + granted counts)
     setWeekSummaries((prev) => {
       const prevMap = new Map(prev.map((p) => [p.weekId, p]));
       const next: WeekSummary[] = [];
@@ -380,34 +391,36 @@ export function useStreakData() {
       return next;
     });
 
-    // Grant tokens based on counts, once per week (delta-based)
+    // 2) Grant credits into the bank based on deltas vs weekSummary.granted (so you can spend them immediately)
     setStreakState((prev) => {
       let nextState = { ...prev };
 
+      // We'll compute "delta to add" using the CURRENT weekSummaries snapshot.
+      // This effect runs again after weekSummaries update, so we keep it stable by relying on existing summary values.
       for (const [weekId, counts] of byWeek.entries()) {
         const existing = getWeekSummary(weekId);
         const existingGrantedWeights = existing?.weightCreditsGranted ?? 0;
         const existingGrantedAbs = existing?.absCreditsGranted ?? 0;
 
-        const shouldHaveGrantedWeights = Math.max(0, counts.weights - 3); // 4th+ weights => bonus tokens
-        const shouldHaveGrantedAbs = Math.max(0, counts.abs - 1); // 2nd+ abs => bonus tokens
+        const shouldHaveGrantedWeights = Math.max(0, counts.weights - 3);
+        const shouldHaveGrantedAbs = Math.max(0, counts.abs - 1);
 
-        const addWeights = shouldHaveGrantedWeights - existingGrantedWeights;
-        const addAbs = shouldHaveGrantedAbs - existingGrantedAbs;
+        const addWeights = Math.max(0, shouldHaveGrantedWeights - existingGrantedWeights);
+        const addAbs = Math.max(0, shouldHaveGrantedAbs - existingGrantedAbs);
 
         if (addWeights > 0 || addAbs > 0) {
           const summary = existing ?? initWeekSummary(weekId);
           updateWeekSummary({
             ...summary,
-            weightCreditsGranted: existingGrantedWeights + Math.max(0, addWeights),
-            absCreditsGranted: existingGrantedAbs + Math.max(0, addAbs),
+            weightCreditsGranted: existingGrantedWeights + addWeights,
+            absCreditsGranted: existingGrantedAbs + addAbs,
             updatedAt: new Date().toISOString(),
           });
 
           nextState = {
             ...nextState,
-            weightCarryoverCredits: nextState.weightCarryoverCredits + Math.max(0, addWeights),
-            absCarryoverCredits: nextState.absCarryoverCredits + Math.max(0, addAbs),
+            weightCarryoverCredits: nextState.weightCarryoverCredits + addWeights,
+            absCarryoverCredits: nextState.absCarryoverCredits + addAbs,
           };
         }
       }
@@ -415,7 +428,7 @@ export function useStreakData() {
       return nextState;
     });
 
-    // Rebuild streak finalization after edits/deletes
+    // 3) Rebuild streak finalization after edits/deletes
     setStreakState((prev) => ({
       ...prev,
       weight2Current: 0,
