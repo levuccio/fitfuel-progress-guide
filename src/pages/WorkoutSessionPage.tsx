@@ -4,13 +4,23 @@ import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Pause, Play, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { SetRow } from "@/components/workout/SetRow";
 import { RestTimer } from "@/components/workout/RestTimer";
 import { ExerciseProgressChart } from "@/components/workout/ExerciseProgressChart";
-import { ExerciseLog, SetLog } from "@/types/workout";
+import { SetLog } from "@/types/workout";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner"; // Using sonner for toasts
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 export default function WorkoutSessionPage() {
   const { templateId } = useParams<{ templateId: string }>();
@@ -18,10 +28,11 @@ export default function WorkoutSessionPage() {
   const { templates, activeSession, startSession, updateActiveSession, completeSession, pauseSession, getLastSessionData } = useWorkoutData();
 
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
-  const [restTimerForExerciseId, setRestTimerForExerciseId] = useState<string | null>(null); // Tracks which exercise should show the timer
+  const [isResting, setIsResting] = useState(false); // New state for global timer
+  const [restDuration, setRestDuration] = useState(60); // New state for global timer duration
   const [restTimerKey, setRestTimerKey] = useState(0); // Key to force remount/reset of RestTimer
-  const [currentRestSeconds, setCurrentRestSeconds] = useState(60); // Default to 60 seconds
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isCompleteWorkoutDialogOpen, setIsCompleteWorkoutDialogOpen] = useState(false); // State for complete workout dialog
 
   const template = templates.find(t => t.id === templateId);
   const lastSessionData = templateId ? getLastSessionData(templateId) : null;
@@ -47,7 +58,7 @@ export default function WorkoutSessionPage() {
 
   const totalSets = activeSession.exercises.reduce((a, e) => a + e.sets.length, 0);
   const completedSets = activeSession.exercises.reduce((a, e) => a + e.sets.filter(s => s.completed).length, 0);
-  const progress = (completedSets / totalSets) * 100;
+  const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
 
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -68,27 +79,29 @@ export default function WorkoutSessionPage() {
     updateActiveSession({ ...activeSession, exercises: updatedExercises });
 
     if (wasJustCompleted) {
-      // Get rest seconds from the exercise in the active session
       const exerciseRestSeconds = activeSession.exercises.find(ex => ex.id === exerciseId)?.restSeconds || 60;
-      
-      // Check if the completed set is the last set for this exercise
-      const isLastSet = updatedSet.setNumber === (currentExercise?.sets.length || 0);
+      const isLastSetOfExercise = updatedSet.setNumber === (currentExercise?.sets.length || 0);
 
-      setCurrentRestSeconds(isLastSet ? 60 : exerciseRestSeconds);
-      setRestTimerForExerciseId(exerciseId); // Set timer for this exercise
-      setRestTimerKey(prev => prev + 1); // Increment key to force RestTimer remount/reset
+      // Start global timer
+      setRestDuration(isLastSetOfExercise ? 60 : exerciseRestSeconds);
+      setIsResting(true);
+      setRestTimerKey(prev => prev + 1); // Force remount/reset
     }
   };
 
-  const handleComplete = () => {
+  const handleRestTimerComplete = () => {
+    setIsResting(false);
+  };
+
+  const handleCompleteWorkout = () => {
     completeSession();
     toast.success("Workout Complete!", { description: `${completedSets}/${totalSets} sets in ${formatTime(elapsedTime)}` });
     navigate("/");
   };
 
   return (
-    <div className="space-y-4 pb-24">
-      <div className="flex items-center gap-3">
+    <div className="space-y-4 pb-24"> {/* Added pb-24 for fixed timer at bottom */}
+      <div className="flex items-center gap-3 sticky top-0 bg-background z-10 py-2"> {/* Made header sticky */}
         <Button variant="ghost" size="icon" onClick={() => { pauseSession(); navigate("/"); }}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -96,22 +109,29 @@ export default function WorkoutSessionPage() {
           <h1 className="text-xl font-bold">{activeSession.templateName}</h1>
           <p className="text-sm text-muted-foreground">{formatTime(elapsedTime)} elapsed</p>
         </div>
+        <Button 
+          onClick={() => setIsCompleteWorkoutDialogOpen(true)} 
+          className="h-9 px-4" 
+          disabled={completedSets === 0}
+        >
+          <Check className="h-4 w-4 mr-2" /> Complete
+        </Button>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
+      {/* Fixed Progress Bar */}
+      <div className="sticky top-[70px] bg-background z-10 py-2 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-border/50"> {/* Adjusted top and added negative margin/padding to span full width */}
+        <div className="flex justify-between text-sm mb-1">
           <span className="text-muted-foreground">Progress</span>
-          <span className="font-medium">{completedSets}/{totalSets} sets</span>
+          <span className="font-medium">{completedSets}/{totalSets} sets ({progress.toFixed(0)}%)</span>
         </div>
         <Progress value={progress} className="h-2" />
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 pt-4"> {/* Added pt-4 to account for fixed progress bar */}
         {activeSession.exercises.map((exercise) => {
           const isExpanded = expandedExercise === exercise.id;
           const exerciseCompleted = exercise.sets.every(s => s.completed);
           const lastData = lastSessionData?.[exercise.exerciseId];
-          // Determine if the current exercise is an abs/core exercise
           const isAbsExercise = exercise.exercise.targetMuscles.some(
             (muscle) => ["Abs", "Core", "Obliques", "Lower Abs"].includes(muscle)
           );
@@ -132,10 +152,9 @@ export default function WorkoutSessionPage() {
               </CardHeader>
               {isExpanded && (
                 <CardContent className="p-4 pt-0 space-y-2">
-                  {/* Exercise Progress Chart - only show if not an abs exercise */}
                   {!isAbsExercise && <ExerciseProgressChart exerciseId={exercise.exerciseId} />}
 
-                  {lastData && !isAbsExercise && ( // Only show last data if not an abs exercise
+                  {lastData && !isAbsExercise && (
                     <p className="text-xs text-muted-foreground mb-2">
                       Last: {lastData.sets.map(s => `${s.weight}kg×${s.reps}`).join(", ")}
                     </p>
@@ -146,16 +165,9 @@ export default function WorkoutSessionPage() {
                       set={set}
                       lastSetData={lastData?.sets[idx]}
                       onUpdate={(s) => handleSetUpdate(exercise.id, s)}
-                      isAbsExercise={isAbsExercise} // Pass the prop
+                      isAbsExercise={isAbsExercise}
                     />
                   ))}
-                  {restTimerForExerciseId === exercise.id && (
-                    <RestTimer 
-                      key={restTimerKey} 
-                      initialSeconds={currentRestSeconds} 
-                      onComplete={() => setRestTimerForExerciseId(null)} // Hide timer when complete
-                    />
-                  )}
                 </CardContent>
               )}
             </Card>
@@ -163,13 +175,36 @@ export default function WorkoutSessionPage() {
         })}
       </div>
 
-      <div className="fixed bottom-20 md:bottom-4 left-0 right-0 p-4 md:pl-68">
-        <div className="max-w-4xl mx-auto">
-          <Button onClick={handleComplete} className="w-full h-12 text-lg" disabled={completedSets === 0}>
-            <Check className="h-5 w-5 mr-2" /> Complete Workout
-          </Button>
+      {/* Fixed Rest Timer at the bottom */}
+      {isResting && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 md:pl-68 bg-background border-t border-border/50 safe-bottom z-50">
+          <div className="max-w-4xl mx-auto">
+            <RestTimer 
+              key={restTimerKey} 
+              initialSeconds={restDuration} 
+              onComplete={handleRestTimerComplete}
+              autoStart={true}
+            />
+          </div>
         </div>
-      </div>
+      )}
+
+      <AlertDialog open={isCompleteWorkoutDialogOpen} onOpenChange={setIsCompleteWorkoutDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Complete Workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to complete this workout? You have completed {completedSets} out of {totalSets} sets.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCompleteWorkout}>
+              Complete Workout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

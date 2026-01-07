@@ -3,6 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Play, X, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useState } from "react"; // Import useState
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 interface PausedSessionBannerProps {
   session: WorkoutSession;
@@ -11,6 +22,8 @@ interface PausedSessionBannerProps {
 }
 
 export function PausedSessionBanner({ session, onContinue, onDiscard }: PausedSessionBannerProps) {
+  const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false); // New state for discard dialog
+
   const completedSets = session.exercises.reduce(
     (acc, ex) => acc + ex.sets.filter(s => s.completed).length,
     0
@@ -37,11 +50,32 @@ export function PausedSessionBanner({ session, onContinue, onDiscard }: PausedSe
             <Play className="h-4 w-4" />
             Continue
           </Button>
-          <Button onClick={onDiscard} variant="outline" size="icon">
+          <Button onClick={() => setIsDiscardDialogOpen(true)} variant="outline" size="icon"> {/* Open dialog on click */}
             <X className="h-4 w-4" />
           </Button>
         </div>
       </CardContent>
+
+      {/* Discard Confirmation Dialog */}
+      <AlertDialog open={isDiscardDialogOpen} onOpenChange={setIsDiscardDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard Workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to discard this paused workout? All progress will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => { onDiscard(); setIsDiscardDialogOpen(false); }} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

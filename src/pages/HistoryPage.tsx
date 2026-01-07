@@ -17,7 +17,9 @@ import { Clock, CheckCircle, XCircle, Dumbbell, Pencil, Trash2, Bike, Gamepad } 
 import { formatDurationShort } from "@/lib/utils";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { EditDurationDialog } from "@/components/EditDurationDialog"; // Import the new dialog
+import { EditDurationDialog } from "@/components/EditDurationDialog";
+import { SessionDetailsDialog } from "@/components/workout/SessionDetailsDialog"; // Import the new dialog
+import { WorkoutSession } from "@/types/workout"; // Import WorkoutSession type
 
 type HistoryEntry = {
   id: string;
@@ -30,10 +32,11 @@ type HistoryEntry = {
   completedSets?: number;
   totalSets?: number;
   winner?: "Aleksej" | "Andreas";
+  originalSession?: WorkoutSession; // Add originalSession for editing
 };
 
 export default function HistoryPage() {
-  const { sessions, updateSessionDuration, deleteSession } = useWorkoutData();
+  const { sessions, updateSessionDuration, deleteSession, updateSession, getLastSessionData } = useWorkoutData();
   const { activityLogs, squashGames, updateActivityLogDuration, deleteActivityLog, updateSquashGameDuration, deleteSquashGame } = useActivityData();
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -41,6 +44,9 @@ export default function HistoryPage() {
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingEntry, setDeletingEntry] = useState<HistoryEntry | null>(null);
+
+  const [isSessionDetailsDialogOpen, setIsSessionDetailsDialogOpen] = useState(false); // New state for session details dialog
+  const [sessionToEdit, setSessionToEdit] = useState<WorkoutSession | null>(null); // New state for session being edited
 
   const allHistoryEntries = useMemo(() => {
     const workoutEntries: HistoryEntry[] = sessions
@@ -60,6 +66,7 @@ export default function HistoryPage() {
           status: session.status,
           completedSets,
           totalSets,
+          originalSession: session, // Store the full session object
         };
       });
 
@@ -134,6 +141,16 @@ export default function HistoryPage() {
     toast.success(`${deletingEntry.name} deleted!`);
     setIsDeleteDialogOpen(false);
     setDeletingEntry(null);
+  };
+
+  const handleEditSession = (session: WorkoutSession) => {
+    setSessionToEdit(session);
+    setIsSessionDetailsDialogOpen(true);
+  };
+
+  const handleSaveSessionChanges = (updatedSession: WorkoutSession) => {
+    updateSession(updatedSession);
+    toast.success(`${updatedSession.templateName} session updated!`);
   };
 
   if (allHistoryEntries.length === 0) {
@@ -219,7 +236,16 @@ export default function HistoryPage() {
                 )}
               </div>
 
-              <div className="mt-3 flex justify-end">
+              <div className="mt-3 flex justify-end gap-2">
+                {entry.type === "workout" && entry.originalSession && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditSession(entry.originalSession!)}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" /> Edit Session
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -241,6 +267,16 @@ export default function HistoryPage() {
           onSave={handleSaveDuration}
           currentDurationSeconds={editingEntry.durationSeconds}
           activityName={editingEntry.name}
+        />
+      )}
+
+      {sessionToEdit && (
+        <SessionDetailsDialog
+          isOpen={isSessionDetailsDialogOpen}
+          onClose={() => setIsSessionDetailsDialogOpen(false)}
+          session={sessionToEdit}
+          onSave={handleSaveSessionChanges}
+          lastSessionData={getLastSessionData(sessionToEdit.templateId)} // Pass last session data for comparison
         />
       )}
 
