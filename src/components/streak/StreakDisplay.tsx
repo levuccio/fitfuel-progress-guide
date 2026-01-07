@@ -123,7 +123,7 @@ export function StreakDisplay() {
             <div className="text-2xl font-bold text-foreground">{provisionalWeight3Current} <span className="text-base text-muted-foreground">weeks</span></div>
             <p className="text-xs text-muted-foreground">Best: {streakState.weight3Best} weeks</p>
             {provisionalWeight3Current < nextWeight3Milestone && (
-              <p className="text-xs text-muted-foreground">Next milestone: {nextWeight3Milestone} weeks</p>
+              <p className className="text-xs text-muted-foreground">Next milestone: {nextWeight3Milestone} weeks</p>
             )}
           </div>
           <div className="space-y-2">

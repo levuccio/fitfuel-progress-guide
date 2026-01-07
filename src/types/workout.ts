@@ -78,6 +78,7 @@ export interface WeekSummary {
   weightsCarryoverApplied: boolean; // New: True if a carryover credit was applied to weights this week
   absCarryoverApplied: boolean;     // New: True if a carryover credit was applied to abs this week
   carryoverEarnedThisWeek: boolean; // True if weightsCount >= 4 this week (earns a general credit)
+  carryoverCreditsGranted: number; // New: Number of carryover credits already granted for this week
   finalized: boolean;       // once the week is rolled over
   updatedAt: string;
 }

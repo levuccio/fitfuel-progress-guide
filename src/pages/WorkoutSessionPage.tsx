@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // add useRef
 import { useParams, useNavigate } from "react-router-dom";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { Button } from "@/components/ui/button";
@@ -24,12 +24,14 @@ import {
 import { StreakEarnedDialog } from "@/components/streak/StreakEarnedDialog"; // Import StreakEarnedDialog
 import { useStreakData } from "@/hooks/useStreakData"; // Import useStreakData
 import { CompactStreakChips } from "@/components/streak/CompactStreakChips"; // Import CompactStreakChips
+import { StreakState, WeekSummary } from "@/types/workout"; // Import StreakState and WeekSummary for local storage read
+import { getWeekId, getUserTimezone } from "@/lib/date-utils"; // Import date utilities
 
 export default function WorkoutSessionPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const { templates, activeSession, startSession, updateActiveSession, completeSession, pauseSession, getLastSessionData } = useWorkoutData();
-  const { currentWeekSummary, streakState, getNextMilestone } = useStreakData(); // Use useStreakData
+  const { getNextMilestone } = useStreakData(); // Use useStreakData
 
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [isResting, setIsResting] = useState(false); // New state for global timer
@@ -58,9 +60,17 @@ export default function WorkoutSessionPage() {
   const template = templates.find(t => t.id === templateId);
   const lastSessionData = templateId ? getLastSessionData(templateId) : null;
 
+  const didAutoStartRef = useRef(false); // Add useRef for auto-start guard
+
   useEffect(() => {
     if (!template) return;
+
+    // If we already auto-started once, never auto-start again on this mount
+    if (didAutoStartRef.current) return;
+
+    // If there is no active session OR it's for another template, start exactly once
     if (!activeSession || activeSession.templateId !== templateId) {
+      didAutoStartRef.current = true;
       startSession(template);
     }
   }, [template, templateId, activeSession, startSession]);
@@ -116,32 +126,31 @@ export default function WorkoutSessionPage() {
 
   const handleCompleteWorkout = () => {
     // Capture current streak state before completing the workout
-    const prevWeight2Best = streakState.weight2Best;
-    const prevWeight3Best = streakState.weight3Best;
-    const prevAbsBest = streakState.absBest;
-    const prevWeight2SaveTokens = streakState.weight2SaveTokens;
-    const prevWeight3SaveTokens = streakState.weight3SaveTokens;
-    const prevAbsSaveTokens = streakState.absSaveTokens;
+    const prevStreakState: StreakState = JSON.parse(localStorage.getItem("fittrack_streak_state") || "{}");
 
     const { completedSession, streakQualification } = completeSession(); // This also calls onWorkoutCompleted internally
 
-    // After session is completed and streak data is updated, check for changes
-    // We need to re-fetch streakState and currentWeekSummary after completeSession
-    // For simplicity in this example, we'll use the values from the hook directly,
-    // assuming they update synchronously or with a slight delay that's acceptable for the dialog.
-    // In a real app, you might want to pass the *new* state from completeSession or re-fetch.
+    // After session is completed and streak data is updated, read fresh data from localStorage
+    const newStreakState: StreakState = JSON.parse(localStorage.getItem("fittrack_streak_state") || "{}");
+    const newWeekSummaries: WeekSummary[] = JSON.parse(localStorage.getItem("fittrack_week_summaries") || "[]");
+
+    const currentWeekId = getWeekId(new Date(completedSession.completedAt!), completedSession.tz!);
+    const currentWeekSummary = newWeekSummaries.find(ws => ws.weekId === currentWeekId);
+
+    const effectiveWeightsCountThisWeek = (currentWeekSummary?.weightsCount || 0) + (currentWeekSummary?.weightsCarryoverApplied ? 1 : 0);
+    const effectiveAbsCountThisWeek = (currentWeekSummary?.absCount || 0) + (currentWeekSummary?.absCarryoverApplied ? 1 : 0);
 
     const newlySecuredWeight2 = streakQualification?.newlySecuredWeight2 || false;
     const newlySecuredWeight3 = streakQualification?.newlySecuredWeight3 || false;
     const newlySecuredAbs = streakQualification?.newlySecuredAbs || false;
 
-    const weight2MilestoneReached = streakState.weight2Best > prevWeight2Best ? streakState.weight2Best : undefined;
-    const weight3MilestoneReached = streakState.weight3Best > prevWeight3Best ? streakState.weight3Best : undefined;
-    const absMilestoneReached = streakState.absBest > prevAbsBest ? streakState.absBest : undefined;
+    const weight2MilestoneReached = newStreakState.weight2Best > (prevStreakState.weight2Best || 0) ? newStreakState.weight2Best : undefined;
+    const weight3MilestoneReached = newStreakState.weight3Best > (prevStreakState.weight3Best || 0) ? newStreakState.weight3Best : undefined;
+    const absMilestoneReached = newStreakState.absBest > (prevStreakState.absBest || 0) ? newStreakState.absBest : undefined;
 
-    const weight2SaveTokensEarned = streakState.weight2SaveTokens - prevWeight2SaveTokens;
-    const weight3SaveTokensEarned = streakState.weight3SaveTokens - prevWeight3SaveTokens;
-    const absSaveTokensEarned = streakState.absSaveTokens - prevAbsSaveTokens;
+    const weight2SaveTokensEarned = newStreakState.weight2SaveTokens - (prevStreakState.weight2SaveTokens || 0);
+    const weight3SaveTokensEarned = newStreakState.weight3SaveTokens - (prevStreakState.weight3SaveTokens || 0);
+    const absSaveTokensEarned = newStreakState.absSaveTokens - (prevStreakState.absSaveTokens || 0);
 
     if (newlySecuredWeight2 || newlySecuredWeight3 || newlySecuredAbs ||
         weight2MilestoneReached || weight3MilestoneReached || absMilestoneReached ||
@@ -150,9 +159,9 @@ export default function WorkoutSessionPage() {
         newlySecuredWeight2,
         newlySecuredWeight3,
         newlySecuredAbs,
-        weight2Current: streakState.weight2Current,
-        weight3Current: streakState.weight3Current,
-        absCurrent: streakState.absCurrent,
+        weight2Current: newStreakState.weight2Current,
+        weight3Current: newStreakState.weight3Current,
+        absCurrent: newStreakState.absCurrent,
         weight2MilestoneReached,
         weight3MilestoneReached,
         absMilestoneReached,
