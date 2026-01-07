@@ -9,6 +9,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Chest", "Triceps", "Shoulders"],
     equipment: ["Barbell", "Bench"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "incline-db-press",
@@ -17,6 +18,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Upper Chest", "Shoulders", "Triceps"],
     equipment: ["Dumbbells", "Incline Bench"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "overhead-press",
@@ -25,6 +27,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Shoulders", "Triceps", "Upper Chest"],
     equipment: ["Barbell"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "lateral-raises",
@@ -33,6 +36,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Side Deltoids"],
     equipment: ["Dumbbells"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "tricep-pushdowns",
@@ -41,6 +45,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Triceps"],
     equipment: ["Cable Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "dips",
@@ -49,6 +54,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Chest", "Triceps", "Shoulders"],
     equipment: ["Dip Bars"],
     isCustom: false,
+    category: "weights",
   },
 
   // Upper Body - Pull
@@ -59,6 +65,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Lats", "Biceps", "Upper Back"],
     equipment: ["Pull-up Bar"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "barbell-rows",
@@ -67,6 +74,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Back", "Biceps", "Rear Deltoids"],
     equipment: ["Barbell"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "cable-rows",
@@ -75,6 +83,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Back", "Biceps"],
     equipment: ["Cable Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "face-pulls",
@@ -83,6 +92,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Rear Deltoids", "Rotator Cuff", "Upper Back"],
     equipment: ["Cable Machine", "Rope Attachment"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "bicep-curls",
@@ -91,6 +101,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Biceps"],
     equipment: ["Dumbbells", "Barbell"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "hammer-curls",
@@ -99,6 +110,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Biceps", "Forearms"],
     equipment: ["Dumbbells"],
     isCustom: false,
+    category: "weights",
   },
 
   // Lower Body
@@ -109,6 +121,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Quadriceps", "Glutes", "Hamstrings"],
     equipment: ["Barbell", "Squat Rack"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "romanian-deadlift",
@@ -117,6 +130,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Hamstrings", "Glutes", "Lower Back"],
     equipment: ["Barbell", "Dumbbells"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "leg-press",
@@ -125,6 +139,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Quadriceps", "Glutes", "Hamstrings"],
     equipment: ["Leg Press Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "leg-curls",
@@ -133,6 +148,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Hamstrings"],
     equipment: ["Leg Curl Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "leg-extensions",
@@ -141,6 +157,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Quadriceps"],
     equipment: ["Leg Extension Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "calf-raises",
@@ -149,6 +166,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Calves"],
     equipment: ["Calf Raise Machine", "Dumbbells"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "lunges",
@@ -157,6 +175,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Quadriceps", "Glutes", "Hamstrings"],
     equipment: ["Dumbbells"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "hip-thrusts",
@@ -165,6 +184,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Glutes", "Hamstrings"],
     equipment: ["Barbell", "Bench"],
     isCustom: false,
+    category: "weights",
   },
 
   // Core/Abs
@@ -175,6 +195,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Core", "Abs"],
     equipment: ["None"],
     isCustom: false,
+    category: "abs",
   },
   {
     id: "hanging-leg-raises",
@@ -183,6 +204,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Lower Abs", "Hip Flexors"],
     equipment: ["Pull-up Bar"],
     isCustom: false,
+    category: "abs",
   },
   {
     id: "cable-crunches",
@@ -191,6 +213,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Abs"],
     equipment: ["Cable Machine"],
     isCustom: false,
+    category: "abs",
   },
   {
     id: "russian-twists",
@@ -199,6 +222,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Obliques", "Abs"],
     equipment: ["Medicine Ball", "Plate"],
     isCustom: false,
+    category: "abs",
   },
   {
     id: "dead-bugs",
@@ -207,6 +231,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Core", "Abs"],
     equipment: ["None"],
     isCustom: false,
+    category: "abs",
   },
   {
     id: "ab-wheel-rollouts",
@@ -215,6 +240,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Abs", "Core"],
     equipment: ["Ab Wheel"],
     isCustom: false,
+    category: "abs",
   },
 
   // Compound/Full Body
@@ -225,6 +251,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Back", "Glutes", "Hamstrings", "Core"],
     equipment: ["Barbell"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "clean-and-press",
@@ -233,6 +260,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Full Body"],
     equipment: ["Barbell"],
     isCustom: false,
+    category: "weights",
   },
     // ===== Custom exercises (Your program) =====
 
@@ -243,6 +271,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Chest", "Shoulders", "Triceps"],
     equipment: ["Dumbbells", "Bench"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "db-press-45",
@@ -251,6 +280,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Upper Chest", "Shoulders", "Triceps"],
     equipment: ["Dumbbells", "Bench"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "neutral-grip-pulldown",
@@ -259,6 +289,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Lats", "Upper Back", "Biceps"],
     equipment: ["Cable Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "wide-grip-lat-pulldown",
@@ -267,6 +298,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Lats", "Upper Back"],
     equipment: ["Cable Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "chest-press-pin",
@@ -275,6 +307,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Chest", "Triceps", "Shoulders"],
     equipment: ["Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "chest-supported-row-pin",
@@ -283,6 +316,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Mid Back", "Lats", "Biceps"],
     equipment: ["Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "pec-deck",
@@ -291,6 +325,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Chest"],
     equipment: ["Machine"],
     isCustom: false,
+    category: "weights",
   },
 
   // Arms
@@ -301,6 +336,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Biceps"],
     equipment: ["Cable Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "db-preacher-curl",
@@ -309,6 +345,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Biceps"],
     equipment: ["Dumbbells", "Preacher Bench"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "no-cheat-curls",
@@ -317,6 +354,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Biceps"],
     equipment: ["Dumbbells"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "oh-cable-tricep-extension",
@@ -325,6 +363,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Triceps"],
     equipment: ["Cable Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "tricep-pushdown-bar",
@@ -333,6 +372,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Triceps"],
     equipment: ["Cable Machine"],
     isCustom: false,
+    category: "weights",
   },
 
   // Lower body
@@ -343,6 +383,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Hamstrings"],
     equipment: ["Machine"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "bulgarian-split-squat",
@@ -351,6 +392,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Quadriceps", "Glutes"],
     equipment: ["Dumbbells", "Bench"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "seated-db-laterals",
@@ -359,6 +401,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Side Deltoids"],
     equipment: ["Dumbbells"],
     isCustom: false,
+    category: "weights",
   },
   {
     id: "high-cable-laterals",
@@ -367,6 +410,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Side Deltoids"],
     equipment: ["Cable Machine"],
     isCustom: false,
+    category: "weights",
   },
 
   // Abs
@@ -377,6 +421,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Lower Abs"],
     equipment: ["Bench"],
     isCustom: false,
+    category: "abs",
   },
   {
     id: "bicycle-twisting",
@@ -385,6 +430,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Abs", "Obliques"],
     equipment: ["None"],
     isCustom: false,
+    category: "abs",
   },
   {
     id: "ab-crunch",
@@ -393,6 +439,7 @@ export const defaultExercises: Exercise[] = [
     targetMuscles: ["Abs"],
     equipment: ["None"],
     isCustom: false,
+    category: "abs",
   },
 
 ];

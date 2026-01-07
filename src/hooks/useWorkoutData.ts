@@ -5,6 +5,8 @@ import { defaultExercises } from "@/data/exercises";
 import { defaultRecipes } from "@/data/recipes";
 import { useCallback } from "react";
 import { format } from "date-fns";
+import { useStreakData } from "./useStreakData"; // Import the new streak hook
+import { getUserTimezone } from "@/lib/date-utils"; // Import timezone utility
 
 const TEMPLATES_KEY = "fittrack_templates";
 const SESSIONS_KEY = "fittrack_sessions";
@@ -34,6 +36,7 @@ export function useWorkoutData() {
   );
 
   const [, setRecipes] = useLocalStorage(RECIPES_KEY, defaultRecipes);
+  const { onWorkoutCompleted } = useStreakData(); // Use the streak data hook
 
   const allExercises = [...defaultExercises, ...customExercises];
 
@@ -156,6 +159,8 @@ export function useWorkoutData() {
           })),
         };
       }),
+      didWeights: false, // Will be calculated on completion
+      didAbs: false,     // Will be calculated on completion
     };
     setActiveSession(session);
     return session;
@@ -168,6 +173,22 @@ export function useWorkoutData() {
   const completeSession = useCallback(() => {
     if (!activeSession) return;
     
+    // Determine didWeights and didAbs based on completed sets in the session
+    let didWeights = false;
+    let didAbs = false;
+
+    activeSession.exercises.forEach(exLog => {
+      const completedSets = exLog.sets.filter(s => s.completed);
+      if (completedSets.length > 0) {
+        if (exLog.exercise.category === "weights") {
+          didWeights = true;
+        }
+        if (exLog.exercise.category === "abs") {
+          didAbs = true;
+        }
+      }
+    });
+
     const completedSession: WorkoutSession = {
       ...activeSession,
       status: "completed",
@@ -175,13 +196,20 @@ export function useWorkoutData() {
       totalDuration: Math.floor(
         (new Date().getTime() - new Date(activeSession.startTime).getTime()) / 1000
       ),
+      didWeights, // Set calculated flags
+      didAbs,     // Set calculated flags
+      completedAt: new Date().toISOString(), // Set completion timestamp
+      tz: getUserTimezone(), // Store timezone at completion
     };
     
     setSessions(prev => [completedSession, ...prev]);
     setActiveSession(null);
+
+    // Trigger streak update
+    onWorkoutCompleted(completedSession);
     
     return completedSession;
-  }, [activeSession, setSessions, setActiveSession]);
+  }, [activeSession, setSessions, setActiveSession, onWorkoutCompleted]);
 
   const discardSession = useCallback(() => {
     setActiveSession(null);

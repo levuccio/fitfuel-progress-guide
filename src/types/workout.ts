@@ -5,6 +5,7 @@ export interface Exercise {
   targetMuscles: string[];
   equipment: string[];
   isCustom: boolean;
+  category: "weights" | "abs" | "cardio" | "other"; // Added category for streak tracking
 }
 
 export interface TemplateExercise {
@@ -55,6 +56,10 @@ export interface WorkoutSession {
   status: 'in_progress' | 'completed' | 'paused' | 'discarded';
   exercises: ExerciseLog[];
   totalDuration?: number; // in seconds
+  didWeights: boolean; // Added for streak tracking
+  didAbs: boolean;     // Added for streak tracking
+  completedAt?: string; // ISO timestamp, for streak tracking
+  tz?: string;          // timezone used at completion time, for streak tracking
 }
 
 export interface LastSessionData {
@@ -62,4 +67,36 @@ export interface LastSessionData {
     sets: { reps: number; weight: number }[];
     date: string;
   };
+}
+
+// New types for Streak Tracking
+export interface WeekSummary {
+  userId: string; // Placeholder for future multi-user, currently 'default'
+  weekId: string; // YYYY-Www
+  weightsCount: number;
+  absCount: number;
+  keepQualified: boolean;
+  perfectQualified: boolean;
+  keepSaved: boolean;       // true if a streak-save token was consumed for this week
+  finalized: boolean;       // once the week is rolled over
+  updatedAt: string;
+}
+
+export interface StreakState {
+  userId: string; // Placeholder for future multi-user, currently 'default'
+
+  keepCurrent: number;
+  keepBest: number;
+
+  perfectCurrent: number;
+  perfectBest: number;
+
+  lastFinalizedWeekId?: string; // latest week that has been finalized
+
+  // “Streak Save” tokens apply ONLY to Keep streak
+  keepStreakSaves: number;
+
+  // milestone tracking
+  keepMilestoneBestAwarded: number;   // e.g. 0,2,4,8,12,24...
+  perfectMilestoneBestAwarded: number;
 }
