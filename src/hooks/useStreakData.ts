@@ -9,24 +9,25 @@ const STREAK_STATE_KEY = "fittrack_streak_state";
 const SESSIONS_KEY = "fittrack_sessions";
 const USER_ID = "default";
 
+// bump this when the meaning/shape of streak-relevant session fields changes
+const STREAK_MIGRATION_KEY = "fittrack_streak_migration_version";
+const STREAK_MIGRATION_VERSION = 1;
+
 const MILESTONE_THRESHOLDS = [4, 8, 12, 16, 24, 36, 52];
 
 function inferDidWeights(session: WorkoutSession) {
-  // If any completed set belongs to a weights-category exercise, count as weights workout
   return session.exercises.some(
     (ex) => ex.exercise.category === "weights" && ex.sets.some((s) => s.completed)
   );
 }
 
 function inferDidAbs(session: WorkoutSession) {
-  // If any completed set belongs to an abs-category exercise, count as abs workout
   return session.exercises.some(
     (ex) => ex.exercise.category === "abs" && ex.sets.some((s) => s.completed)
   );
 }
 
 function getSessionCompletionTimestamp(session: WorkoutSession) {
-  // Prefer completedAt; otherwise prefer endTime (cross-midnight safety); fall back to startTime
   return session.completedAt ?? session.endTime ?? session.startTime;
 }
 
@@ -220,7 +221,6 @@ export function useStreakData() {
     if (session.didWeights) summary.weightsCount += 1;
     if (session.didAbs) summary.absCount += 1;
 
-    // Grant carryover credits immediately (delta-based)
     const earnedCreditsThisWeek = Math.max(0, summary.weightsCount - 3);
     const newCreditsToGrant = earnedCreditsThisWeek - summary.carryoverCreditsGranted;
 
@@ -289,45 +289,40 @@ export function useStreakData() {
     });
   }, [currentWeekId, getWeekSummary, initWeekSummary, updateWeekSummary, setStreakState]);
 
-  // A) Normalize legacy sessions ONCE so both desktop + phone count history consistently.
-  // - fill didWeights/didAbs if missing
-  // - fill completedAt if missing
-  // - fill tz if missing
+  // Versioned migration: makes old history count on phone after deploys
   useEffect(() => {
+    const raw = localStorage.getItem(STREAK_MIGRATION_KEY);
+    const current = raw ? Number(raw) : 0;
+    if (current >= STREAK_MIGRATION_VERSION) return;
+
     const tzFallback = getUserTimezone();
-
-    const needsFix = sessions.some((s) => {
-      if (s.status !== "completed") return false;
-      const needsCompletedAt = !s.completedAt;
-      const needsTz = !s.tz;
-      const needsDidWeights = typeof s.didWeights !== "boolean";
-      const needsDidAbs = typeof s.didAbs !== "boolean";
-      return needsCompletedAt || needsTz || needsDidWeights || needsDidAbs;
-    });
-
-    if (!needsFix) return;
 
     setSessions((prev) =>
       prev.map((s) => {
         if (s.status !== "completed") return s;
 
         const next: WorkoutSession = { ...s };
-
-        if (!next.completedAt) next.completedAt = getSessionCompletionTimestamp(next);
-        if (!next.tz) next.tz = tzFallback;
-
-        // Some old installs may have didWeights/didAbs missing or always false.
-        // Recompute from actual completed sets to match History.
+        next.completedAt = getSessionCompletionTimestamp(next);
+        next.tz = getSessionTimezone(next, tzFallback);
         next.didWeights = inferDidWeights(next);
         next.didAbs = inferDidAbs(next);
-
         return next;
       })
     );
-  }, [sessions, setSessions]);
 
-  // B) ALWAYS derive week summaries from sessions (History is source of truth).
-  // This ensures deletions/edits reflect in streaks on every device.
+    // Reset finalization so streaks rebuild from normalized history
+    setStreakState((prev) => ({
+      ...prev,
+      weight2Current: 0,
+      weight3Current: 0,
+      absCurrent: 0,
+      lastFinalizedWeekId: undefined,
+    }));
+
+    localStorage.setItem(STREAK_MIGRATION_KEY, String(STREAK_MIGRATION_VERSION));
+  }, [setSessions, setStreakState]);
+
+  // ALWAYS derive week summaries from sessions (History is source of truth)
   useEffect(() => {
     const completed = sessions.filter((s) => s.status === "completed");
     const tzFallback = getUserTimezone();
@@ -379,7 +374,7 @@ export function useStreakData() {
       return next;
     });
 
-    // Force re-finalization from scratch so streak numbers update after deletes/edits
+    // Rebuild streak finalization after edits/deletes
     setStreakState((prev) => ({
       ...prev,
       weight2Current: 0,
@@ -402,7 +397,6 @@ export function useStreakData() {
   const effectiveAbsCountThisWeek =
     currentWeekSummary.absCount + (currentWeekSummary.absCarryoverApplied ? 1 : 0);
 
-  // Provisional display streaks (ONE place)
   const qualifiedWeight2ThisWeek = effectiveWeightsCountThisWeek >= 2;
   const qualifiedWeight3ThisWeek = effectiveWeightsCountThisWeek >= 3;
   const qualifiedAbsThisWeek = effectiveAbsCountThisWeek >= 1;
