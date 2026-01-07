@@ -11,6 +11,29 @@ const USER_ID = "default";
 
 const MILESTONE_THRESHOLDS = [4, 8, 12, 16, 24, 36, 52];
 
+function inferDidWeights(session: WorkoutSession) {
+  // If any completed set belongs to a weights-category exercise, count as weights workout
+  return session.exercises.some(
+    (ex) => ex.exercise.category === "weights" && ex.sets.some((s) => s.completed)
+  );
+}
+
+function inferDidAbs(session: WorkoutSession) {
+  // If any completed set belongs to an abs-category exercise, count as abs workout
+  return session.exercises.some(
+    (ex) => ex.exercise.category === "abs" && ex.sets.some((s) => s.completed)
+  );
+}
+
+function getSessionCompletionTimestamp(session: WorkoutSession) {
+  // Prefer completedAt; otherwise prefer endTime (cross-midnight safety); fall back to startTime
+  return session.completedAt ?? session.endTime ?? session.startTime;
+}
+
+function getSessionTimezone(session: WorkoutSession, tzFallback: string) {
+  return session.tz ?? tzFallback;
+}
+
 export function useStreakData() {
   const [weekSummaries, setWeekSummaries] = useLocalStorage<WeekSummary[]>(WEEK_SUMMARY_KEY, []);
   const [streakState, setStreakState] = useLocalStorage<StreakState>(STREAK_STATE_KEY, {
@@ -29,7 +52,7 @@ export function useStreakData() {
     weight3MilestoneAwarded: 0,
     absMilestoneAwarded: 0,
   });
-  const [sessions] = useLocalStorage<WorkoutSession[]>(SESSIONS_KEY, []);
+  const [sessions, setSessions] = useLocalStorage<WorkoutSession[]>(SESSIONS_KEY, []);
 
   const userTimezone = useMemo(getUserTimezone, []);
   const currentWeekId = useMemo(() => getWeekId(new Date(), userTimezone), [userTimezone]);
@@ -266,89 +289,53 @@ export function useStreakData() {
     });
   }, [currentWeekId, getWeekSummary, initWeekSummary, updateWeekSummary, setStreakState]);
 
-  // 1) One-time backfill/migration (for older installs)
+  // A) Normalize legacy sessions ONCE so both desktop + phone count history consistently.
+  // - fill didWeights/didAbs if missing
+  // - fill completedAt if missing
+  // - fill tz if missing
   useEffect(() => {
-    const completed = sessions.filter((s) => s.status === "completed");
-    if (completed.length === 0) return;
-
-    if (weekSummaries.length > 0 && streakState.lastFinalizedWeekId) return;
-
     const tzFallback = getUserTimezone();
-    const byWeek = new Map<string, { weights: number; abs: number }>();
 
-    for (const s of completed) {
-      // Prefer endTime for legacy sessions (cross-midnight safety)
-      const completedAt = s.completedAt ?? s.endTime ?? s.startTime;
-      const tz = s.tz ?? tzFallback;
-
-      const weekId = getWeekId(new Date(completedAt), tz);
-
-      const didWeights = typeof s.didWeights === "boolean" ? s.didWeights : false;
-      const didAbs = typeof s.didAbs === "boolean" ? s.didAbs : false;
-
-      const cur = byWeek.get(weekId) ?? { weights: 0, abs: 0 };
-      if (didWeights) cur.weights += 1;
-      if (didAbs) cur.abs += 1;
-      byWeek.set(weekId, cur);
-    }
-
-    setWeekSummaries((prev) => {
-      const prevMap = new Map(prev.map((p) => [p.weekId, p]));
-      const next: WeekSummary[] = [];
-
-      for (const [weekId, counts] of byWeek.entries()) {
-        const existing = prevMap.get(weekId);
-        next.push({
-          ...(existing ?? initWeekSummary(weekId)),
-          weekId,
-          weightsCount: counts.weights,
-          absCount: counts.abs,
-          carryoverEarnedThisWeek: Math.max(0, counts.weights - 3) > 0,
-          weightsCarryoverApplied: existing?.weightsCarryoverApplied ?? false,
-          absCarryoverApplied: existing?.absCarryoverApplied ?? false,
-          carryoverCreditsGranted: existing?.carryoverCreditsGranted ?? 0,
-          finalized: existing?.finalized ?? false,
-          updatedAt: new Date().toISOString(),
-        });
-        prevMap.delete(weekId);
-      }
-
-      for (const leftover of prevMap.values()) next.push(leftover);
-      return next;
+    const needsFix = sessions.some((s) => {
+      if (s.status !== "completed") return false;
+      const needsCompletedAt = !s.completedAt;
+      const needsTz = !s.tz;
+      const needsDidWeights = typeof s.didWeights !== "boolean";
+      const needsDidAbs = typeof s.didAbs !== "boolean";
+      return needsCompletedAt || needsTz || needsDidWeights || needsDidAbs;
     });
 
-    setStreakState((prev) => {
-      if (prev.lastFinalizedWeekId) return prev;
-      const earliestWeek = Array.from(byWeek.keys()).sort()[0];
-      return {
-        ...prev,
-        weight2Current: 0,
-        weight2Best: 0,
-        weight3Current: 0,
-        weight3Best: 0,
-        absCurrent: 0,
-        absBest: 0,
-        weight2SaveTokens: 0,
-        weight3SaveTokens: 0,
-        absSaveTokens: 0,
-        generalCarryoverCredits: 0,
-        weight2MilestoneAwarded: 0,
-        weight3MilestoneAwarded: 0,
-        absMilestoneAwarded: 0,
-        lastFinalizedWeekId: prevWeekId(earliestWeek),
-      };
-    });
-  }, [initWeekSummary, sessions, setStreakState, setWeekSummaries, streakState.lastFinalizedWeekId, weekSummaries.length]);
+    if (!needsFix) return;
 
-  // 2) Always derive week counts from sessions (fix delete/edit not updating progress)
+    setSessions((prev) =>
+      prev.map((s) => {
+        if (s.status !== "completed") return s;
+
+        const next: WorkoutSession = { ...s };
+
+        if (!next.completedAt) next.completedAt = getSessionCompletionTimestamp(next);
+        if (!next.tz) next.tz = tzFallback;
+
+        // Some old installs may have didWeights/didAbs missing or always false.
+        // Recompute from actual completed sets to match History.
+        next.didWeights = inferDidWeights(next);
+        next.didAbs = inferDidAbs(next);
+
+        return next;
+      })
+    );
+  }, [sessions, setSessions]);
+
+  // B) ALWAYS derive week summaries from sessions (History is source of truth).
+  // This ensures deletions/edits reflect in streaks on every device.
   useEffect(() => {
     const completed = sessions.filter((s) => s.status === "completed");
     const tzFallback = getUserTimezone();
     const byWeek = new Map<string, { weights: number; abs: number }>();
 
     for (const s of completed) {
-      const ts = s.completedAt ?? s.endTime ?? s.startTime; // prefer endTime if legacy
-      const tz = s.tz ?? tzFallback;
+      const ts = getSessionCompletionTimestamp(s);
+      const tz = getSessionTimezone(s, tzFallback);
       const weekId = getWeekId(new Date(ts), tz);
 
       const cur = byWeek.get(weekId) ?? { weights: 0, abs: 0 };
@@ -378,6 +365,7 @@ export function useStreakData() {
         prevMap.delete(weekId);
       }
 
+      // keep old weeks but zero them out if their sessions are gone
       for (const leftover of prevMap.values()) {
         next.push({
           ...leftover,
@@ -391,7 +379,7 @@ export function useStreakData() {
       return next;
     });
 
-    // Rebuild streak finalization after edits/deletes
+    // Force re-finalization from scratch so streak numbers update after deletes/edits
     setStreakState((prev) => ({
       ...prev,
       weight2Current: 0,
@@ -449,7 +437,6 @@ export function useStreakData() {
     effectiveWeightsCountThisWeek,
     effectiveAbsCountThisWeek,
     getNextMilestone,
-    // kept for compatibility (now largely unnecessary with derived summaries)
     recalculateStreaksFromDeletion: () => {},
   };
 }
