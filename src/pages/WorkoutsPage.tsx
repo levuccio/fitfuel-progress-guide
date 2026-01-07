@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Import useEffect
 import { useNavigate } from "react-router-dom";
 import { Plus, Play, Clock, Dumbbell, MoreVertical, Pencil, Trash2, CalendarDays, Activity, Timer, Bike, Gamepad } from "lucide-react";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
@@ -151,7 +151,7 @@ export default function WorkoutsPage() {
         </Button>
       </div>
 
-      {activeSession && (
+      {activeSession && activeSession.status !== "completed" && activeSession.status !== "discarded" && (
         <PausedSessionBanner
           session={activeSession}
           onContinue={() => {

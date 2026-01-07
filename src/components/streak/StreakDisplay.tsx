@@ -19,9 +19,10 @@ export function StreakDisplay() {
 
   const [selectedCarryoverType, setSelectedCarryoverType] = useState<"weights" | "abs">("weights");
 
-  const provisionalWeight2Current = streakState.weight2Current + (effectiveWeightsCountThisWeek >= 2 ? 1 : 0);
-  const provisionalWeight3Current = streakState.weight3Current + (effectiveWeightsCountThisWeek >= 3 ? 1 : 0);
-  const provisionalAbsCurrent = streakState.absCurrent + (effectiveAbsCountThisWeek >= 1 ? 1 : 0);
+  // useStreakData already returns provisional current streaks
+  const provisionalWeight2Current = streakState.weight2Current;
+  const provisionalWeight3Current = streakState.weight3Current;
+  const provisionalAbsCurrent = streakState.absCurrent;
 
   const weight2Progress = Math.min(100, (effectiveWeightsCountThisWeek / 2) * 100);
   const weight3Progress = Math.min(100, (effectiveWeightsCountThisWeek / 3) * 100);
@@ -34,6 +35,8 @@ export function StreakDisplay() {
   const nextWeight2Milestone = getNextMilestone(streakState.weight2Best);
   const nextWeight3Milestone = getNextMilestone(streakState.weight3Best);
   const nextAbsMilestone = getNextMilestone(streakState.absBest);
+
+  const bonusCreditsEarnedThisWeek = Math.max(0, currentWeekSummary.weightsCount - 3);
 
   return (
     <Card className="glass-card">
@@ -160,10 +163,10 @@ export function StreakDisplay() {
         </div>
 
         {/* Carryover Credits */}
-        {currentWeekSummary.carryoverEarnedThisWeek && (
+        {bonusCreditsEarnedThisWeek > 0 && (
           <div className="flex items-center gap-2 text-sm text-primary">
             <PlusCircle className="h-4 w-4" />
-            <span>You earned 1 carryover credit this week!</span>
+            <span>You earned {bonusCreditsEarnedThisWeek} carryover credit{bonusCreditsEarnedThisWeek > 1 ? "s" : ""} this week!</span>
           </div>
         )}
         {streakState.generalCarryoverCredits > 0 && (!currentWeekSummary.weightsCarryoverApplied || !currentWeekSummary.absCarryoverApplied) && (
@@ -174,26 +177,23 @@ export function StreakDisplay() {
                 <span>You have {streakState.generalCarryoverCredits} carryover credit{streakState.generalCarryoverCredits > 1 ? "s" : ""}. Apply it to count as +1 session for:</span>
               </div>
               <div className="flex items-center gap-2">
-                <Select value={selectedCarryoverType} onValueChange={(value: "weights" | "abs") => setSelectedCarryoverType(value)}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {!currentWeekSummary.weightsCarryoverApplied && <SelectItem value="weights">Weights</SelectItem>}
-                    {!currentWeekSummary.absCarryoverApplied && <SelectItem value="abs">Abs</SelectItem>}
-                  </SelectContent>
-                </Select>
                 <Button 
-                  onClick={() => applyCarryoverCredit(selectedCarryoverType)} 
+                  onClick={() => applyCarryoverCredit("weights")} 
                   variant="outline" 
                   size="sm" 
                   className="text-blue-500 border-blue-500 hover:bg-blue-500/10"
-                  disabled={
-                    (selectedCarryoverType === "weights" && currentWeekSummary.weightsCarryoverApplied) ||
-                    (selectedCarryoverType === "abs" && currentWeekSummary.absCarryoverApplied)
-                  }
+                  disabled={currentWeekSummary.weightsCarryoverApplied}
                 >
-                  Apply
+                  Apply to Weights
+                </Button>
+                <Button 
+                  onClick={() => applyCarryoverCredit("abs")} 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-blue-500 border-blue-500 hover:bg-blue-500/10"
+                  disabled={currentWeekSummary.absCarryoverApplied}
+                >
+                  Apply to Abs
                 </Button>
               </div>
             </CardContent>

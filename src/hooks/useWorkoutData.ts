@@ -3,7 +3,7 @@ import { WorkoutTemplate, WorkoutSession, Exercise } from "@/types/workout";
 import { defaultTemplates } from "@/data/templates";
 import { defaultExercises } from "@/data/exercises";
 import { defaultRecipes } from "@/data/recipes";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react"; // Import useEffect
 import { format } from "date-fns";
 import { useStreakData } from "./useStreakData"; // Import the new streak hook
 import { getUserTimezone } from "@/lib/date-utils"; // Import timezone utility
@@ -39,6 +39,14 @@ export function useWorkoutData() {
   const { onWorkoutCompleted, recalculateStreaksFromDeletion } = useStreakData(); // Use the streak data hook
 
   const allExercises = [...defaultExercises, ...customExercises];
+
+  // Auto-clear activeSession if it's in a completed or discarded state
+  useEffect(() => {
+    if (!activeSession) return;
+    if (activeSession.status === "completed" || activeSession.status === "discarded") {
+      setActiveSession(null);
+    }
+  }, [activeSession, setActiveSession]);
 
   const addTemplate = useCallback((template: WorkoutTemplate) => {
     setTemplates(prev => [...prev, template]);

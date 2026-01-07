@@ -187,12 +187,14 @@ export function useStreakData() {
         currentStreakState.absBest = Math.max(currentStreakState.absBest, currentStreakState.absCurrent);
 
         // Handle carryover credits earned in this finalized week
-        if (summary.carryoverEarnedThisWeek) {
-          currentStreakState.generalCarryoverCredits += 1; // Use generalCarryoverCredits
-          toast.success("Carryover Credit Earned!", {
-            description: `You completed 4+ weight sessions in week ${weekId} and earned a carryover credit!`,
-          });
+        const creditsEarned = Math.max(0, summary.weightsCount - 3);
+        if (creditsEarned > 0) {
+          currentStreakState.generalCarryoverCredits += creditsEarned;
+          // toast.success("Carryover Credit Earned!", {
+          //   description: `You completed ${summary.weightsCount} weight sessions in week ${weekId} and earned ${creditsEarned} carryover credit(s)!`,
+          // });
         }
+        summary.carryoverEarnedThisWeek = creditsEarned > 0; // Ensure this flag is set for UI
 
         summary.finalized = true;
         summary.updatedAt = new Date().toISOString();
@@ -233,11 +235,8 @@ export function useStreakData() {
       summary.absCount += 1;
     }
 
-    // Check for carryover earned this week
-    if (summary.weightsCount >= 4 && !summary.carryoverEarnedThisWeek) {
-      summary.carryoverEarnedThisWeek = true;
-      // This will be processed during finalization
-    }
+    // Check for carryover earned this week (provisional, actual award happens on finalization)
+    summary.carryoverEarnedThisWeek = Math.max(0, summary.weightsCount - 3) > 0;
 
     summary.updatedAt = new Date().toISOString();
     updateWeekSummary(summary);
@@ -302,9 +301,11 @@ export function useStreakData() {
     const deletedWeekId = getWeekId(new Date(deletedSession.completedAt), deletedSession.tz);
 
     setWeekSummaries(prevSummaries => {
+      // Filter out the deleted session's week summary if it was the only one, or reset its counts
       const updatedSummaries = prevSummaries.map(summary => {
         if (summary.weekId === deletedWeekId) {
-          // Mark the affected week as not finalized to force re-evaluation
+          // This is a simplified reset. A more robust solution would re-aggregate all sessions for this week.
+          // For now, we'll mark it as not finalized to force re-evaluation by finalizeUpToCurrentWeek.
           return { ...summary, finalized: false, updatedAt: new Date().toISOString() };
         }
         return summary;
@@ -318,8 +319,7 @@ export function useStreakData() {
       return { ...prevStreakState, lastFinalizedWeekId: resetPointWeekId };
     });
 
-    // Trigger the full finalization process
-    // This will be called by the useEffect on next render due to streakState change
+    // The useEffect for finalizeUpToCurrentWeek will pick this up on the next render.
   }, [setWeekSummaries, setStreakState, prevWeekId]);
 
 
