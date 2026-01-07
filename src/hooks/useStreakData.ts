@@ -10,7 +10,6 @@ const STREAK_STATE_KEY = "fittrack_streak_state";
 const SESSIONS_KEY = "fittrack_sessions";
 const USER_ID = "default";
 
-// bump this when streak data schema changes
 const STREAK_MIGRATION_KEY = "fittrack_streak_migration_version";
 const STREAK_MIGRATION_VERSION = 2;
 
@@ -244,14 +243,16 @@ export function useStreakData() {
           return prevStreakState;
         }
 
-        const summary = getWeekSummary(targetWeekId) || initWeekSummary(targetWeekId);
+        const existing = weekSummaries.find((ws) => ws.weekId === targetWeekId) || initWeekSummary(targetWeekId);
 
         const nextSummary: WeekSummary = {
-          ...summary,
+          ...existing,
           weightsCarryoverApplied:
-            type === "weights" ? (summary.weightsCarryoverApplied || 0) + 1 : summary.weightsCarryoverApplied || 0,
+            type === "weights"
+              ? (existing.weightsCarryoverApplied || 0) + 1
+              : existing.weightsCarryoverApplied || 0,
           absCarryoverApplied:
-            type === "abs" ? (summary.absCarryoverApplied || 0) + 1 : summary.absCarryoverApplied || 0,
+            type === "abs" ? (existing.absCarryoverApplied || 0) + 1 : existing.absCarryoverApplied || 0,
           updatedAt: new Date().toISOString(),
         };
 
@@ -270,7 +271,7 @@ export function useStreakData() {
         };
       });
     },
-    [currentWeekId, getWeekSummary, initWeekSummary, updateWeekSummary, setStreakState]
+    [currentWeekId, initWeekSummary, updateWeekSummary, weekSummaries, setStreakState]
   );
 
   const onWorkoutCompleted = useCallback(
@@ -307,7 +308,7 @@ export function useStreakData() {
     [getWeekSummary, initWeekSummary]
   );
 
-  // Migration for schema changes + legacy sessions
+  // Migration
   useEffect(() => {
     const raw = localStorage.getItem(STREAK_MIGRATION_KEY);
     const current = raw ? Number(raw) : 0;
@@ -340,7 +341,7 @@ export function useStreakData() {
     localStorage.setItem(STREAK_MIGRATION_KEY, String(STREAK_MIGRATION_VERSION));
   }, [setSessions, setStreakState]);
 
-  // Derive week summaries from sessions + grant weekly bonus credits deterministically
+  // Rebuild week summaries from sessions and grant bonus credits so counter matches "earned" tokens
   useEffect(() => {
     const completed = sessions.filter((s) => s.status === "completed");
     const tzFallback = getUserTimezone();
@@ -357,8 +358,9 @@ export function useStreakData() {
       byWeek.set(weekId, cur);
     }
 
-    // 1) Update summaries (keep applied counts + granted counts)
-    setWeekSummaries((prev) => {
+    // 1) Rebuild summaries and capture the updated list
+    const updatedSummaries = (() => {
+      const prev = weekSummaries;
       const prevMap = new Map(prev.map((p) => [p.weekId, p]));
       const next: WeekSummary[] = [];
 
@@ -388,34 +390,33 @@ export function useStreakData() {
         });
       }
 
+      setWeekSummaries(next);
       return next;
-    });
+    })();
 
-    // 2) Grant credits into the bank based on deltas vs weekSummary.granted (so you can spend them immediately)
+    // 2) Grant credits so counter matches what we should have, based on updatedSummaries
     setStreakState((prev) => {
       let nextState = { ...prev };
 
-      // We'll compute "delta to add" using the CURRENT weekSummaries snapshot.
-      // This effect runs again after weekSummaries update, so we keep it stable by relying on existing summary values.
-      for (const [weekId, counts] of byWeek.entries()) {
-        const existing = getWeekSummary(weekId);
-        const existingGrantedWeights = existing?.weightCreditsGranted ?? 0;
-        const existingGrantedAbs = existing?.absCreditsGranted ?? 0;
+      for (const summary of updatedSummaries) {
+        const weekId = summary.weekId;
+        const counts = byWeek.get(weekId);
+        if (!counts) continue;
 
         const shouldHaveGrantedWeights = Math.max(0, counts.weights - 3);
         const shouldHaveGrantedAbs = Math.max(0, counts.abs - 1);
 
-        const addWeights = Math.max(0, shouldHaveGrantedWeights - existingGrantedWeights);
-        const addAbs = Math.max(0, shouldHaveGrantedAbs - existingGrantedAbs);
+        const addWeights = Math.max(0, shouldHaveGrantedWeights - (summary.weightCreditsGranted || 0));
+        const addAbs = Math.max(0, shouldHaveGrantedAbs - (summary.absCreditsGranted || 0));
 
         if (addWeights > 0 || addAbs > 0) {
-          const summary = existing ?? initWeekSummary(weekId);
-          updateWeekSummary({
+          const updated: WeekSummary = {
             ...summary,
-            weightCreditsGranted: existingGrantedWeights + addWeights,
-            absCreditsGranted: existingGrantedAbs + addAbs,
+            weightCreditsGranted: (summary.weightCreditsGranted || 0) + addWeights,
+            absCreditsGranted: (summary.absCreditsGranted || 0) + addAbs,
             updatedAt: new Date().toISOString(),
-          });
+          };
+          updateWeekSummary(updated);
 
           nextState = {
             ...nextState,
@@ -425,18 +426,16 @@ export function useStreakData() {
         }
       }
 
-      return nextState;
+      // 3) Reset current streaks so finalizeUpToCurrentWeek can rebuild them
+      return {
+        ...nextState,
+        weight2Current: 0,
+        weight3Current: 0,
+        absCurrent: 0,
+        lastFinalizedWeekId: undefined,
+      };
     });
-
-    // 3) Rebuild streak finalization after edits/deletes
-    setStreakState((prev) => ({
-      ...prev,
-      weight2Current: 0,
-      weight3Current: 0,
-      absCurrent: 0,
-      lastFinalizedWeekId: undefined,
-    }));
-  }, [getWeekSummary, initWeekSummary, sessions, setStreakState, setWeekSummaries, updateWeekSummary]);
+  }, [initWeekSummary, sessions, setStreakState, setWeekSummaries, updateWeekSummary, weekSummaries]);
 
   useEffect(() => {
     finalizeUpToCurrentWeek();
