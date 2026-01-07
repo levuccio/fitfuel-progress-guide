@@ -5,7 +5,7 @@ import { CheckCircle, XCircle, Flame, Zap, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,8 @@ export function StreakDisplay() {
     effectiveAbsCountThisWeek,
     applyCarryoverCredit,
     getNextMilestone,
+    weightBonusBalance,
+    absBonusBalance,
   } = useStreakData();
 
   const [applyTarget, setApplyTarget] = useState<"this" | "next">("this");
@@ -55,13 +57,8 @@ export function StreakDisplay() {
   const bonusWeightsEarnedThisWeek = Math.max(0, currentWeekSummary.weightsCount - 3);
   const bonusAbsEarnedThisWeek = Math.max(0, currentWeekSummary.absCount - 1);
 
-  const canApplyWeightsNow = useMemo(() => {
-    return streakState.weightCarryoverCredits > 0;
-  }, [streakState.weightCarryoverCredits]);
-
-  const canApplyAbsNow = useMemo(() => {
-    return streakState.absCarryoverCredits > 0;
-  }, [streakState.absCarryoverCredits]);
+  const canApplyWeightsNow = weightBonusBalance > 0;
+  const canApplyAbsNow = absBonusBalance > 0;
 
   const requestApply = (type: ConfirmApplyType, target: ConfirmApplyTarget) => {
     setConfirmType(type);
@@ -125,16 +122,34 @@ export function StreakDisplay() {
 
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-2">
-                {weight2Qualified ? <CheckCircle className="h-5 w-5 text-success" /> : <XCircle className="h-5 w-5 text-muted-foreground" />}
-                <span className={cn(weight2Qualified ? "text-success" : "text-muted-foreground")}>✅ 2x Weights secured</span>
+                {weight2Qualified ? (
+                  <CheckCircle className="h-5 w-5 text-success" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                )}
+                <span className={cn(weight2Qualified ? "text-success" : "text-muted-foreground")}>
+                  ✅ 2x Weights secured
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                {weight3Qualified ? <CheckCircle className="h-5 w-5 text-success" /> : <XCircle className="h-5 w-5 text-muted-foreground" />}
-                <span className={cn(weight3Qualified ? "text-success" : "text-muted-foreground")}>⭐ 3x Weights secured</span>
+                {weight3Qualified ? (
+                  <CheckCircle className="h-5 w-5 text-success" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                )}
+                <span className={cn(weight3Qualified ? "text-success" : "text-muted-foreground")}>
+                  ⭐ 3x Weights secured
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                {absQualified ? <CheckCircle className="h-5 w-5 text-success" /> : <XCircle className="h-5 w-5 text-muted-foreground" />}
-                <span className={cn(absQualified ? "text-success" : "text-muted-foreground")}>🧱 Abs secured</span>
+                {absQualified ? (
+                  <CheckCircle className="h-5 w-5 text-success" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                )}
+                <span className={cn(absQualified ? "text-success" : "text-muted-foreground")}>
+                  🧱 Abs secured
+                </span>
               </div>
             </div>
           </div>
@@ -212,8 +227,8 @@ export function StreakDisplay() {
                 <div className="flex items-center gap-2 text-sm text-blue-500">
                   <PlusCircle className="h-5 w-5" />
                   <span>
-                    Bonus tokens: Weights <span className="font-semibold">{streakState.weightCarryoverCredits}</span> • Abs{" "}
-                    <span className="font-semibold">{streakState.absCarryoverCredits}</span>
+                    Bonus tokens: Weights <span className="font-semibold">{weightBonusBalance}</span> • Abs{" "}
+                    <span className="font-semibold">{absBonusBalance}</span>
                   </span>
                 </div>
 
