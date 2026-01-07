@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { StreakEarnedDialog } from "@/components/streak/StreakEarnedDialog";
 import { CompactStreakChips } from "@/components/streak/CompactStreakChips";
-import { getWeekId } from "@/lib/date-utils";
+import { getWeekId, getUserTimezone } from "@/lib/date-utils";
 
 export default function WorkoutSessionPage() {
   const { templateId } = useParams<{ templateId: string }>();
@@ -138,22 +138,28 @@ export default function WorkoutSessionPage() {
     const newStreakState: StreakState = JSON.parse(localStorage.getItem("fittrack_streak_state") || "{}");
     const newWeekSummaries: WeekSummary[] = JSON.parse(localStorage.getItem("fittrack_week_summaries") || "[]");
 
-    const weekId = getWeekId(new Date(completedSession.completedAt!), completedSession.tz!);
+    const tz = completedSession.tz || getUserTimezone();
+    const completedAt = completedSession.completedAt || completedSession.endTime || completedSession.startTime;
+    const weekId = getWeekId(new Date(completedAt), tz);
+
     const ws = newWeekSummaries.find((w) => w.weekId === weekId);
 
     const effectiveWeightsCountThisWeek = (ws?.weightsCount || 0) + (ws?.weightsCarryoverApplied || 0);
     const effectiveAbsCountThisWeek = (ws?.absCount || 0) + (ws?.absCarryoverApplied || 0);
 
-    // Dialog numbers: start from previous state, then add +1 if we just secured this streak this week
-    const displayWeight2Current =
-      (prevStreakState.weight2Current || 0) +
-      ((streakQualification?.newlySecuredWeight2 && effectiveWeightsCountThisWeek >= 2) ? 1 : 0);
-    const displayWeight3Current =
-      (prevStreakState.weight3Current || 0) +
-      ((streakQualification?.newlySecuredWeight3 && effectiveWeightsCountThisWeek >= 3) ? 1 : 0);
-    const displayAbsCurrent =
-      (prevStreakState.absCurrent || 0) +
-      ((streakQualification?.newlySecuredAbs && effectiveAbsCountThisWeek >= 1) ? 1 : 0);
+    const qualifiedWeight2ThisWeek = effectiveWeightsCountThisWeek >= 2;
+    const qualifiedWeight3ThisWeek = effectiveWeightsCountThisWeek >= 3;
+    const qualifiedAbsThisWeek = effectiveAbsCountThisWeek >= 1;
+
+    // For the dialog, show finalized streak +1 if this week is qualified (same logic as chips / streak page)
+    // IMPORTANT: use finalized values (from streak state) not provisional ones.
+    const finalizedW2 = prevStreakState.weight2Current || 0;
+    const finalizedW3 = prevStreakState.weight3Current || 0;
+    const finalizedAbs = prevStreakState.absCurrent || 0;
+
+    const displayWeight2Current = finalizedW2 + (qualifiedWeight2ThisWeek ? 1 : 0);
+    const displayWeight3Current = finalizedW3 + (qualifiedWeight3ThisWeek ? 1 : 0);
+    const displayAbsCurrent = finalizedAbs + (qualifiedAbsThisWeek ? 1 : 0);
 
     const newlySecuredWeight2 = streakQualification?.newlySecuredWeight2 || false;
     const newlySecuredWeight3 = streakQualification?.newlySecuredWeight3 || false;
@@ -210,9 +216,6 @@ export default function WorkoutSessionPage() {
 
   return (
     <div className="space-y-4 pb-24">
-      {/* ...rest of component unchanged... */}
-      {/* (everything below remains exactly as it was, including UI, RestTimer, etc.) */}
-
       <div className="flex items-center gap-3 sticky top-0 bg-background z-10 py-2">
         <Button
           variant="ghost"

@@ -162,31 +162,56 @@ export function StreakDisplay() {
           </div>
         </div>
 
-        {/* Bonus tokens earned this week */}
+        {/* Bonus tokens earned this week + inline apply buttons */}
         {(bonusWeightsEarnedThisWeek > 0 || bonusAbsEarnedThisWeek > 0) && (
-          <div className="flex flex-col gap-1 text-sm text-primary">
+          <div className="space-y-2 text-sm text-primary">
             {bonusWeightsEarnedThisWeek > 0 && (
-              <div className="flex items-center gap-2">
-                <PlusCircle className="h-4 w-4" />
-                <span>
-                  You earned {bonusWeightsEarnedThisWeek} weights bonus token
-                  {bonusWeightsEarnedThisWeek > 1 ? "s" : ""} this week!
-                </span>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <PlusCircle className="h-4 w-4" />
+                  <span>
+                    You earned {bonusWeightsEarnedThisWeek} weights bonus token
+                    {bonusWeightsEarnedThisWeek > 1 ? "s" : ""} this week!
+                  </span>
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/10"
+                  onClick={() => applyCarryoverCredit("weights", "this")}
+                  disabled={streakState.weightCarryoverCredits <= 0}
+                >
+                  Apply weight bonus (this week)
+                </Button>
               </div>
             )}
+
             {bonusAbsEarnedThisWeek > 0 && (
-              <div className="flex items-center gap-2">
-                <PlusCircle className="h-4 w-4" />
-                <span>
-                  You earned {bonusAbsEarnedThisWeek} abs bonus token
-                  {bonusAbsEarnedThisWeek > 1 ? "s" : ""} this week!
-                </span>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <PlusCircle className="h-4 w-4" />
+                  <span>
+                    You earned {bonusAbsEarnedThisWeek} abs bonus token
+                    {bonusAbsEarnedThisWeek > 1 ? "s" : ""} this week!
+                  </span>
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/10"
+                  onClick={() => applyCarryoverCredit("abs", "this")}
+                  disabled={streakState.absCarryoverCredits <= 0}
+                >
+                  Apply abs bonus (this week)
+                </Button>
               </div>
             )}
           </div>
         )}
 
-        {/* Apply bonus tokens */}
+        {/* Apply bonus tokens (full control) */}
         {(streakState.weightCarryoverCredits > 0 || streakState.absCarryoverCredits > 0) && (
           <Card className="glass-card border-blue-500/50 bg-blue-500/5">
             <CardContent className="p-4 space-y-3">
