@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Dumbbell, History, TrendingUp, UtensilsCrossed, Settings } from "lucide-react";
+import { Dumbbell, History, TrendingUp, UtensilsCrossed, Settings, Flame } from "lucide-react"; // Import Flame icon
 import { cn } from "@/lib/utils";
 
 interface LayoutProps {
@@ -12,6 +12,7 @@ const navItems = [
   { path: "/history", icon: History, label: "History" },
   { path: "/progress", icon: TrendingUp, label: "Progress" },
   { path: "/recipes", icon: UtensilsCrossed, label: "Recipes" },
+  { path: "/streaks", icon: Flame, label: "Streaks" }, // New navigation item for Streaks
   { path: "/settings", icon: Settings, label: "Settings" },
 ];
 

@@ -29,7 +29,7 @@ import { isAfter, startOfWeek, endOfWeek } from "date-fns";
 import { formatDurationShort } from "@/lib/utils";
 import { LogActivityDialog } from "@/components/activity/LogActivityDialog";
 import { LogSquashDialog } from "@/components/activity/LogSquashDialog";
-import { StreakDisplay } from "@/components/streak/StreakDisplay"; // Import StreakDisplay
+// Removed StreakDisplay import
 
 export default function WorkoutsPage() {
   const navigate = useNavigate();
@@ -161,7 +161,7 @@ export default function WorkoutsPage() {
         />
       )}
 
-      <StreakDisplay /> {/* Added StreakDisplay here */}
+      {/* StreakDisplay was here, now moved to StreaksPage */}
 
       <div className="grid grid-cols-2 gap-4">
         {/* Cycling Card */}

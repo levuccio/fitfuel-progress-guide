@@ -12,6 +12,7 @@ import SettingsPage from "./pages/SettingsPage";
 import WorkoutSessionPage from "./pages/WorkoutSessionPage";
 import TemplateBuilderPage from "./pages/TemplateBuilderPage";
 import RecipeDetailPage from "./pages/RecipeDetailPage";
+import StreaksPage from "./pages/StreaksPage"; // Import the new StreaksPage
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/progress" element={<ProgressPage />} />
             <Route path="/recipes" element={<RecipesPage />} />
             <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+            <Route path="/streaks" element={<StreaksPage />} /> {/* New route for StreaksPage */}
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/workout/:templateId" element={<WorkoutSessionPage />} />
             <Route path="/template/new" element={<TemplateBuilderPage />} />
