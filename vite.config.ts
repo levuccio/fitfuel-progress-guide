@@ -15,4 +15,7 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    exclude: ["date-fns-tz"], // Exclude date-fns-tz from pre-bundling
+  },
 }));
