@@ -21,11 +21,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"; // Import AlertDialog components
+import { StreakEarnedDialog } from "@/components/streak/StreakEarnedDialog"; // Import StreakEarnedDialog
+import { useStreakData } from "@/hooks/useStreakData"; // Import useStreakData
 
 export default function WorkoutSessionPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const { templates, activeSession, startSession, updateActiveSession, completeSession, pauseSession, getLastSessionData } = useWorkoutData();
+  const { currentWeekSummary, streakState, onWorkoutCompleted } = useStreakData(); // Use useStreakData
 
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [isResting, setIsResting] = useState(false); // New state for global timer
@@ -33,6 +36,18 @@ export default function WorkoutSessionPage() {
   const [restTimerKey, setRestTimerKey] = useState(0); // Key to force remount/reset of RestTimer
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isCompleteWorkoutDialogOpen, setIsCompleteWorkoutDialogOpen] = useState(false); // State for complete workout dialog
+
+  // Streak dialog states
+  const [isStreakEarnedDialogOpen, setIsStreakEarnedDialogOpen] = useState(false);
+  const [streakDialogProps, setStreakDialogProps] = useState({
+    newlySecuredKeep: false,
+    newlySecuredPerfect: false,
+    keepCurrent: 0,
+    perfectCurrent: 0,
+    keepStreakSavesEarned: 0,
+    newMilestoneReached: undefined as number | undefined,
+    milestoneType: undefined as "keep" | "perfect" | undefined,
+  });
 
   const template = templates.find(t => t.id === templateId);
   const lastSessionData = templateId ? getLastSessionData(templateId) : null;
@@ -94,8 +109,56 @@ export default function WorkoutSessionPage() {
   };
 
   const handleCompleteWorkout = () => {
-    completeSession();
-    toast.success("Workout Complete!", { description: `${completedSets}/${totalSets} sets in ${formatTime(elapsedTime)}` });
+    // Capture current streak state before completing the workout
+    const prevKeepQualified = currentWeekSummary.keepQualified;
+    const prevPerfectQualified = currentWeekSummary.perfectQualified;
+    const prevKeepBest = streakState.keepBest;
+    const prevPerfectBest = streakState.perfectBest;
+    const prevKeepStreakSaves = streakState.keepStreakSaves;
+
+    const completedWorkoutSession = completeSession(); // This also calls onWorkoutCompleted internally
+
+    // After session is completed and streak data is updated, check for changes
+    const newKeepQualified = currentWeekSummary.keepQualified;
+    const newPerfectQualified = currentWeekSummary.perfectQualified;
+    const newKeepBest = streakState.keepBest;
+    const newPerfectBest = streakState.perfectBest;
+    const newKeepStreakSaves = streakState.keepStreakSaves;
+
+    const newlySecuredKeep = !prevKeepQualified && newKeepQualified;
+    const newlySecuredPerfect = !prevPerfectQualified && newPerfectQualified;
+    const keepStreakSavesEarned = newKeepStreakSaves - prevKeepStreakSaves;
+
+    let newMilestoneReached: number | undefined;
+    let milestoneType: "keep" | "perfect" | undefined;
+
+    if (newKeepBest > prevKeepBest) {
+      newMilestoneReached = newKeepBest;
+      milestoneType = "keep";
+    } else if (newPerfectBest > prevPerfectBest) {
+      newMilestoneReached = newPerfectBest;
+      milestoneType = "perfect";
+    }
+
+    if (newlySecuredKeep || newlySecuredPerfect || keepStreakSavesEarned > 0 || newMilestoneReached) {
+      setStreakDialogProps({
+        newlySecuredKeep,
+        newlySecuredPerfect,
+        keepCurrent: streakState.keepCurrent, // Use the updated current streak from state
+        perfectCurrent: streakState.perfectCurrent, // Use the updated current streak from state
+        keepStreakSavesEarned,
+        newMilestoneReached,
+        milestoneType,
+      });
+      setIsStreakEarnedDialogOpen(true);
+    } else {
+      toast.success("Workout Complete!", { description: `${completedSets}/${totalSets} sets in ${formatTime(elapsedTime)}` });
+      navigate("/");
+    }
+  };
+
+  const handleCloseStreakDialog = () => {
+    setIsStreakEarnedDialogOpen(false);
     navigate("/");
   };
 
@@ -205,6 +268,12 @@ export default function WorkoutSessionPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <StreakEarnedDialog
+        isOpen={isStreakEarnedDialogOpen}
+        onClose={handleCloseStreakDialog}
+        {...streakDialogProps}
+      />
     </div>
   );
 }
