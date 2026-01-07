@@ -36,7 +36,7 @@ export function useWorkoutData() {
   );
 
   const [, setRecipes] = useLocalStorage(RECIPES_KEY, defaultRecipes);
-  const { onWorkoutCompleted } = useStreakData(); // Use the streak data hook
+  const { onWorkoutCompleted, recalculateStreaksFromDeletion } = useStreakData(); // Use the streak data hook
 
   const allExercises = [...defaultExercises, ...customExercises];
 
@@ -203,7 +203,7 @@ export function useWorkoutData() {
     };
     
     setSessions(prev => [completedSession, ...prev]);
-    setActiveSession(null);
+    setActiveSession(null); // Ensure active session is cleared
 
     // Trigger streak update and return its result for the dialog
     const streakQualification = onWorkoutCompleted(completedSession);
@@ -212,7 +212,7 @@ export function useWorkoutData() {
   }, [activeSession, setSessions, setActiveSession, onWorkoutCompleted]);
 
   const discardSession = useCallback(() => {
-    setActiveSession(null);
+    setActiveSession(null); // Ensure active session is cleared
   }, [setActiveSession]);
 
   const pauseSession = useCallback(() => {
@@ -243,9 +243,11 @@ export function useWorkoutData() {
     );
   }, [setSessions]);
 
-  const deleteSession = useCallback((sessionId: string) => {
-    setSessions(prevSessions => prevSessions.filter(session => session.id !== sessionId));
-  }, [setSessions]);
+  const deleteSession = useCallback((sessionToDelete: WorkoutSession) => {
+    setSessions(prevSessions => prevSessions.filter(session => session.id !== sessionToDelete.id));
+    // Trigger streak recalculation after deletion
+    recalculateStreaksFromDeletion(sessionToDelete);
+  }, [setSessions, recalculateStreaksFromDeletion]);
 
   const restoreFactorySettings = useCallback(() => {
     setTemplates(defaultTemplates);

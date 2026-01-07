@@ -293,6 +293,36 @@ export function useStreakData() {
     });
   }, [currentWeekId, getWeekSummary, initWeekSummary, updateWeekSummary, setStreakState]);
 
+  const recalculateStreaksFromDeletion = useCallback((deletedSession: WorkoutSession) => {
+    if (!deletedSession.completedAt || !deletedSession.tz) {
+      console.warn("Deleted session missing completedAt or tz for streak recalculation:", deletedSession);
+      return;
+    }
+
+    const deletedWeekId = getWeekId(new Date(deletedSession.completedAt), deletedSession.tz);
+
+    setWeekSummaries(prevSummaries => {
+      const updatedSummaries = prevSummaries.map(summary => {
+        if (summary.weekId === deletedWeekId) {
+          // Mark the affected week as not finalized to force re-evaluation
+          return { ...summary, finalized: false, updatedAt: new Date().toISOString() };
+        }
+        return summary;
+      });
+      return updatedSummaries;
+    });
+
+    setStreakState(prevStreakState => {
+      // Reset lastFinalizedWeekId to force re-finalization from the week before the deleted session's week
+      const resetPointWeekId = prevWeekId(deletedWeekId);
+      return { ...prevStreakState, lastFinalizedWeekId: resetPointWeekId };
+    });
+
+    // Trigger the full finalization process
+    // This will be called by the useEffect on next render due to streakState change
+  }, [setWeekSummaries, setStreakState, prevWeekId]);
+
+
   // --- Initial Load / Rollover Check ---
   useEffect(() => {
     finalizeUpToCurrentWeek();
@@ -328,5 +358,6 @@ export function useStreakData() {
     effectiveWeightsCountThisWeek,
     effectiveAbsCountThisWeek, // Export new effective count
     getNextMilestone,
+    recalculateStreaksFromDeletion, // Export the new function
   };
 }

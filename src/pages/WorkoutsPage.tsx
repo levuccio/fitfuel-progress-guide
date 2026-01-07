@@ -138,21 +138,17 @@ export default function WorkoutsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-4"> {/* Added flex container for title and chips */}
           <h1 className="text-2xl font-bold text-foreground flex items-center">
             <Dumbbell className="inline-block h-7 w-7 mr-2 text-primary" />
             FitteGutta
           </h1>
+          <CompactStreakChips /> {/* Moved CompactStreakChips here */}
         </div>
         <Button onClick={() => navigate("/template/new")} className="gap-2">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">New Template</span>
         </Button>
-      </div>
-
-      {/* Compact Streak Chips */}
-      <div className="-mx-4 px-4 md:-mx-6 md:px-6 border-b border-border/50 pb-4">
-        <CompactStreakChips />
       </div>
 
       {activeSession && (

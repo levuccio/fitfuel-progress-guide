@@ -129,7 +129,10 @@ export default function HistoryPage() {
 
     switch (deletingEntry.type) {
       case "workout":
-        deleteSession(deletingEntry.id);
+        // Pass the full session object for streak recalculation
+        if (deletingEntry.originalSession) {
+          deleteSession(deletingEntry.originalSession);
+        }
         break;
       case "cycling":
         deleteActivityLog(deletingEntry.id);

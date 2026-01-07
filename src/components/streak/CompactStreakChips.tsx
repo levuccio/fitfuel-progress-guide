@@ -16,21 +16,21 @@ export function CompactStreakChips() {
         effectiveWeightsCountThisWeek >= 2 ? "bg-red-500/10 text-red-500" : "bg-muted text-muted-foreground"
       )}>
         <Zap className="h-3 w-3" />
-        <span>2x: {provisionalWeight2Current}w</span>
+        <span>{provisionalWeight2Current}w</span>
       </div>
       <div className={cn(
         "flex items-center gap-1 px-2 py-1 rounded-full",
         effectiveWeightsCountThisWeek >= 3 ? "bg-yellow-500/10 text-yellow-500" : "bg-muted text-muted-foreground"
       )}>
         <Zap className="h-3 w-3" />
-        <span>3x: {provisionalWeight3Current}w</span>
+        <span>{provisionalWeight3Current}w</span>
       </div>
       <div className={cn(
         "flex items-center gap-1 px-2 py-1 rounded-full",
         effectiveAbsCountThisWeek >= 1 ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"
       )}>
         <Zap className="h-3 w-3" />
-        <span>Abs: {provisionalAbsCurrent}w</span>
+        <span>{provisionalAbsCurrent}w</span>
       </div>
     </div>
   );
