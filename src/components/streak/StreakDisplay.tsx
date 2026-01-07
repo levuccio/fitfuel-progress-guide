@@ -1,15 +1,28 @@
 import { useStreakData } from "@/hooks/useStreakData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, XCircle, Flame, Trophy, ShieldCheck, Zap, Dumbbell, HeartPulse } from "lucide-react";
+import { CheckCircle, XCircle, Flame, Trophy, ShieldCheck, Zap, Dumbbell, HeartPulse, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export function StreakDisplay() {
-  const { currentWeekSummary, streakState, nextKeepMilestone, nextPerfectMilestone } = useStreakData();
+  const { currentWeekSummary, streakState, effectiveWeightsCountThisWeek, applyCarryoverCredit, getNextMilestone } = useStreakData();
 
-  const keepProgress = Math.min(100, (currentWeekSummary.weightsCount / 2) * 100);
-  const perfectProgress = Math.min(100, (currentWeekSummary.weightsCount / 3) * 100);
+  const provisionalWeight2Current = streakState.weight2Current + (effectiveWeightsCountThisWeek >= 2 ? 1 : 0);
+  const provisionalWeight3Current = streakState.weight3Current + (effectiveWeightsCountThisWeek >= 3 ? 1 : 0);
+  const provisionalAbsCurrent = streakState.absCurrent + (currentWeekSummary.absCount >= 1 ? 1 : 0);
+
+  const weight2Progress = Math.min(100, (effectiveWeightsCountThisWeek / 2) * 100);
+  const weight3Progress = Math.min(100, (effectiveWeightsCountThisWeek / 3) * 100);
   const absProgress = Math.min(100, (currentWeekSummary.absCount / 1) * 100);
+
+  const weight2Qualified = effectiveWeightsCountThisWeek >= 2;
+  const weight3Qualified = effectiveWeightsCountThisWeek >= 3;
+  const absQualified = currentWeekSummary.absCount >= 1;
+
+  const nextWeight2Milestone = getNextMilestone(streakState.weight2Best);
+  const nextWeight3Milestone = getNextMilestone(streakState.weight3Best);
+  const nextAbsMilestone = getNextMilestone(streakState.absBest);
 
   return (
     <Card className="glass-card">
@@ -27,11 +40,11 @@ export function StreakDisplay() {
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-muted-foreground flex items-center gap-1">
-                  <Dumbbell className="h-4 w-4" /> Weights ({currentWeekSummary.weightsCount}/2)
+                  <Dumbbell className="h-4 w-4" /> Weights ({currentWeekSummary.weightsCount}{currentWeekSummary.carryoverApplied ? "+1" : ""}/3)
                 </span>
-                <span className="font-medium">{keepProgress.toFixed(0)}%</span>
+                <span className="font-medium">{weight3Progress.toFixed(0)}%</span>
               </div>
-              <Progress value={keepProgress} className="h-2" indicatorColor={currentWeekSummary.weightsCount >= 2 ? "bg-primary" : "bg-orange-500"} />
+              <Progress value={weight3Progress} className="h-2" indicatorColor={weight3Qualified ? "bg-primary" : "bg-orange-500"} />
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
@@ -40,28 +53,38 @@ export function StreakDisplay() {
                 </span>
                 <span className="font-medium">{absProgress.toFixed(0)}%</span>
               </div>
-              <Progress value={absProgress} className="h-2" indicatorColor={currentWeekSummary.absCount >= 1 ? "bg-primary" : "bg-orange-500"} />
+              <Progress value={absProgress} className="h-2" indicatorColor={absQualified ? "bg-primary" : "bg-orange-500"} />
             </div>
           </div>
-          <div className="flex items-center justify-between text-sm">
+          <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-2">
-              {currentWeekSummary.keepQualified ? (
+              {weight2Qualified ? (
                 <CheckCircle className="h-5 w-5 text-success" />
               ) : (
                 <XCircle className="h-5 w-5 text-muted-foreground" />
               )}
-              <span className={cn(currentWeekSummary.keepQualified ? "text-success" : "text-muted-foreground")}>
-                Keep Streak Qualified
+              <span className={cn(weight2Qualified ? "text-success" : "text-muted-foreground")}>
+                ✅ 2x Weights secured
               </span>
             </div>
             <div className="flex items-center gap-2">
-              {currentWeekSummary.perfectQualified ? (
+              {weight3Qualified ? (
                 <CheckCircle className="h-5 w-5 text-success" />
               ) : (
                 <XCircle className="h-5 w-5 text-muted-foreground" />
               )}
-              <span className={cn(currentWeekSummary.perfectQualified ? "text-success" : "text-muted-foreground")}>
-                Perfect Streak Qualified
+              <span className={cn(weight3Qualified ? "text-success" : "text-muted-foreground")}>
+                ⭐ 3x Weights secured
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {absQualified ? (
+                <CheckCircle className="h-5 w-5 text-success" />
+              ) : (
+                <XCircle className="h-5 w-5 text-muted-foreground" />
+              )}
+              <span className={cn(absQualified ? "text-success" : "text-muted-foreground")}>
+                🧱 Abs secured
               </span>
             </div>
           </div>
@@ -71,31 +94,80 @@ export function StreakDisplay() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-              <ShieldCheck className="h-4 w-4 text-blue-500" /> Keep Streak
+              <ShieldCheck className="h-4 w-4 text-blue-500" /> 2x Weights Streak
             </h4>
-            <div className="text-2xl font-bold text-foreground">{streakState.keepCurrent} <span className="text-base text-muted-foreground">weeks</span></div>
-            <p className="text-xs text-muted-foreground">Best: {streakState.keepBest} weeks</p>
-            {streakState.keepCurrent < nextKeepMilestone && (
-              <p className="text-xs text-muted-foreground">Next milestone: {nextKeepMilestone} weeks</p>
+            <div className="text-2xl font-bold text-foreground">{provisionalWeight2Current} <span className="text-base text-muted-foreground">weeks</span></div>
+            <p className="text-xs text-muted-foreground">Best: {streakState.weight2Best} weeks</p>
+            {provisionalWeight2Current < nextWeight2Milestone && (
+              <p className="text-xs text-muted-foreground">Next milestone: {nextWeight2Milestone} weeks</p>
             )}
           </div>
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-              <Trophy className="h-4 w-4 text-yellow-500" /> Perfect Streak
+              <Trophy className="h-4 w-4 text-yellow-500" /> 3x Weights Streak
             </h4>
-            <div className="text-2xl font-bold text-foreground">{streakState.perfectCurrent} <span className="text-base text-muted-foreground">weeks</span></div>
-            <p className="text-xs text-muted-foreground">Best: {streakState.perfectBest} weeks</p>
-            {streakState.perfectCurrent < nextPerfectMilestone && (
-              <p className="text-xs text-muted-foreground">Next milestone: {nextPerfectMilestone} weeks</p>
+            <div className="text-2xl font-bold text-foreground">{provisionalWeight3Current} <span className="text-base text-muted-foreground">weeks</span></div>
+            <p className="text-xs text-muted-foreground">Best: {streakState.weight3Best} weeks</p>
+            {provisionalWeight3Current < nextWeight3Milestone && (
+              <p className="text-xs text-muted-foreground">Next milestone: {nextWeight3Milestone} weeks</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <HeartPulse className="h-4 w-4 text-green-500" /> Abs Streak
+            </h4>
+            <div className="text-2xl font-bold text-foreground">{provisionalAbsCurrent} <span className="text-base text-muted-foreground">weeks</span></div>
+            <p className="text-xs text-muted-foreground">Best: {streakState.absBest} weeks</p>
+            {provisionalAbsCurrent < nextAbsMilestone && (
+              <p className="text-xs text-muted-foreground">Next milestone: {nextAbsMilestone} weeks</p>
             )}
           </div>
         </div>
 
         {/* Streak Saves */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Zap className="h-4 w-4 text-purple-500" />
-          <span>{streakState.keepStreakSaves} Streak Save Tokens</span>
+        <div className="space-y-2">
+          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Zap className="h-5 w-5 text-purple-500" /> Streak Save Tokens
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Streak Save Tokens let you protect a streak for one missed week. Tokens are earned every 4 successful weeks and can only be used for that same streak.
+          </p>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="flex items-center gap-1.5">
+              <Dumbbell className="h-4 w-4 text-blue-500" />
+              <span>2x: {streakState.weight2SaveTokens}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Dumbbell className="h-4 w-4 text-yellow-500" />
+              <span>3x: {streakState.weight3SaveTokens}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <HeartPulse className="h-4 w-4 text-green-500" />
+              <span>Abs: {streakState.absSaveTokens}</span>
+            </div>
+          </div>
         </div>
+
+        {/* Carryover Credits */}
+        {currentWeekSummary.carryoverEarnedThisWeek && (
+          <div className="flex items-center gap-2 text-sm text-primary">
+            <PlusCircle className="h-4 w-4" />
+            <span>You earned 1 carryover credit this week!</span>
+          </div>
+        )}
+        {streakState.weightCarryoverCredits > 0 && !currentWeekSummary.carryoverApplied && (
+          <Card className="glass-card border-blue-500/50 bg-blue-500/5">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-blue-500">
+                <PlusCircle className="h-5 w-5" />
+                <span>You have {streakState.weightCarryoverCredits} carryover weight credit{streakState.weightCarryoverCredits > 1 ? "s" : ""}. Apply it to this week to count as +1 weight session.</span>
+              </div>
+              <Button onClick={applyCarryoverCredit} variant="outline" size="sm" className="text-blue-500 border-blue-500 hover:bg-blue-500/10">
+                Apply Credit
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </CardContent>
     </Card>
   );

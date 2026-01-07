@@ -75,9 +75,8 @@ export interface WeekSummary {
   weekId: string; // YYYY-Www
   weightsCount: number;
   absCount: number;
-  keepQualified: boolean;
-  perfectQualified: boolean;
-  keepSaved: boolean;       // true if a streak-save token was consumed for this week
+  carryoverApplied: boolean; // True if a carryover credit was applied this week
+  carryoverEarnedThisWeek: boolean; // True if weightsCount >= 4 this week
   finalized: boolean;       // once the week is rolled over
   updatedAt: string;
 }
@@ -85,18 +84,23 @@ export interface WeekSummary {
 export interface StreakState {
   userId: string; // Placeholder for future multi-user, currently 'default'
 
-  keepCurrent: number;
-  keepBest: number;
+  weight2Current: number;
+  weight2Best: number;
+  weight3Current: number;
+  weight3Best: number;
+  absCurrent: number;
+  absBest: number;
 
-  perfectCurrent: number;
-  perfectBest: number;
+  weight2SaveTokens: number;
+  weight3SaveTokens: number;
+  absSaveTokens: number;
+
+  weightCarryoverCredits: number;
 
   lastFinalizedWeekId?: string; // latest week that has been finalized
 
-  // “Streak Save” tokens apply ONLY to Keep streak
-  keepStreakSaves: number;
-
-  // milestone tracking
-  keepMilestoneBestAwarded: number;   // e.g. 0,2,4,8,12,24...
-  perfectMilestoneBestAwarded: number;
+  // milestone tracking to prevent double-award
+  weight2MilestoneAwarded: number; // last milestone (0,4,8...)
+  weight3MilestoneAwarded: number;
+  absMilestoneAwarded: number;
 }

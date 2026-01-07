@@ -161,8 +161,6 @@ export default function WorkoutsPage() {
         />
       )}
 
-      {/* StreakDisplay was here, now moved to StreaksPage */}
-
       <div className="grid grid-cols-2 gap-4">
         {/* Cycling Card */}
         <Card

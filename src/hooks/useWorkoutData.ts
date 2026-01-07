@@ -205,10 +205,10 @@ export function useWorkoutData() {
     setSessions(prev => [completedSession, ...prev]);
     setActiveSession(null);
 
-    // Trigger streak update
-    onWorkoutCompleted(completedSession);
+    // Trigger streak update and return its result for the dialog
+    const streakQualification = onWorkoutCompleted(completedSession);
     
-    return completedSession;
+    return { completedSession, streakQualification };
   }, [activeSession, setSessions, setActiveSession, onWorkoutCompleted]);
 
   const discardSession = useCallback(() => {

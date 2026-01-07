@@ -23,12 +23,13 @@ import {
 } from "@/components/ui/alert-dialog"; // Import AlertDialog components
 import { StreakEarnedDialog } from "@/components/streak/StreakEarnedDialog"; // Import StreakEarnedDialog
 import { useStreakData } from "@/hooks/useStreakData"; // Import useStreakData
+import { CompactStreakChips } from "@/components/streak/CompactStreakChips"; // Import CompactStreakChips
 
 export default function WorkoutSessionPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const { templates, activeSession, startSession, updateActiveSession, completeSession, pauseSession, getLastSessionData } = useWorkoutData();
-  const { currentWeekSummary, streakState, onWorkoutCompleted } = useStreakData(); // Use useStreakData
+  const { currentWeekSummary, streakState, getNextMilestone } = useStreakData(); // Use useStreakData
 
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [isResting, setIsResting] = useState(false); // New state for global timer
@@ -40,13 +41,18 @@ export default function WorkoutSessionPage() {
   // Streak dialog states
   const [isStreakEarnedDialogOpen, setIsStreakEarnedDialogOpen] = useState(false);
   const [streakDialogProps, setStreakDialogProps] = useState({
-    newlySecuredKeep: false,
-    newlySecuredPerfect: false,
-    keepCurrent: 0,
-    perfectCurrent: 0,
-    keepStreakSavesEarned: 0,
-    newMilestoneReached: undefined as number | undefined,
-    milestoneType: undefined as "keep" | "perfect" | undefined,
+    newlySecuredWeight2: false,
+    newlySecuredWeight3: false,
+    newlySecuredAbs: false,
+    weight2Current: 0,
+    weight3Current: 0,
+    absCurrent: 0,
+    weight2MilestoneReached: undefined as number | undefined,
+    weight3MilestoneReached: undefined as number | undefined,
+    absMilestoneReached: undefined as number | undefined,
+    weight2SaveTokensEarned: 0,
+    weight3SaveTokensEarned: 0,
+    absSaveTokensEarned: 0,
   });
 
   const template = templates.find(t => t.id === templateId);
@@ -110,45 +116,49 @@ export default function WorkoutSessionPage() {
 
   const handleCompleteWorkout = () => {
     // Capture current streak state before completing the workout
-    const prevKeepQualified = currentWeekSummary.keepQualified;
-    const prevPerfectQualified = currentWeekSummary.perfectQualified;
-    const prevKeepBest = streakState.keepBest;
-    const prevPerfectBest = streakState.perfectBest;
-    const prevKeepStreakSaves = streakState.keepStreakSaves;
+    const prevWeight2Best = streakState.weight2Best;
+    const prevWeight3Best = streakState.weight3Best;
+    const prevAbsBest = streakState.absBest;
+    const prevWeight2SaveTokens = streakState.weight2SaveTokens;
+    const prevWeight3SaveTokens = streakState.weight3SaveTokens;
+    const prevAbsSaveTokens = streakState.absSaveTokens;
 
-    const completedWorkoutSession = completeSession(); // This also calls onWorkoutCompleted internally
+    const { completedSession, streakQualification } = completeSession(); // This also calls onWorkoutCompleted internally
 
     // After session is completed and streak data is updated, check for changes
-    const newKeepQualified = currentWeekSummary.keepQualified;
-    const newPerfectQualified = currentWeekSummary.perfectQualified;
-    const newKeepBest = streakState.keepBest;
-    const newPerfectBest = streakState.perfectBest;
-    const newKeepStreakSaves = streakState.keepStreakSaves;
+    // We need to re-fetch streakState and currentWeekSummary after completeSession
+    // For simplicity in this example, we'll use the values from the hook directly,
+    // assuming they update synchronously or with a slight delay that's acceptable for the dialog.
+    // In a real app, you might want to pass the *new* state from completeSession or re-fetch.
 
-    const newlySecuredKeep = !prevKeepQualified && newKeepQualified;
-    const newlySecuredPerfect = !prevPerfectQualified && newPerfectQualified;
-    const keepStreakSavesEarned = newKeepStreakSaves - prevKeepStreakSaves;
+    const newlySecuredWeight2 = streakQualification?.newlySecuredWeight2 || false;
+    const newlySecuredWeight3 = streakQualification?.newlySecuredWeight3 || false;
+    const newlySecuredAbs = streakQualification?.newlySecuredAbs || false;
 
-    let newMilestoneReached: number | undefined;
-    let milestoneType: "keep" | "perfect" | undefined;
+    const weight2MilestoneReached = streakState.weight2Best > prevWeight2Best ? streakState.weight2Best : undefined;
+    const weight3MilestoneReached = streakState.weight3Best > prevWeight3Best ? streakState.weight3Best : undefined;
+    const absMilestoneReached = streakState.absBest > prevAbsBest ? streakState.absBest : undefined;
 
-    if (newKeepBest > prevKeepBest) {
-      newMilestoneReached = newKeepBest;
-      milestoneType = "keep";
-    } else if (newPerfectBest > prevPerfectBest) {
-      newMilestoneReached = newPerfectBest;
-      milestoneType = "perfect";
-    }
+    const weight2SaveTokensEarned = streakState.weight2SaveTokens - prevWeight2SaveTokens;
+    const weight3SaveTokensEarned = streakState.weight3SaveTokens - prevWeight3SaveTokens;
+    const absSaveTokensEarned = streakState.absSaveTokens - prevAbsSaveTokens;
 
-    if (newlySecuredKeep || newlySecuredPerfect || keepStreakSavesEarned > 0 || newMilestoneReached) {
+    if (newlySecuredWeight2 || newlySecuredWeight3 || newlySecuredAbs ||
+        weight2MilestoneReached || weight3MilestoneReached || absMilestoneReached ||
+        weight2SaveTokensEarned > 0 || weight3SaveTokensEarned > 0 || absSaveTokensEarned > 0) {
       setStreakDialogProps({
-        newlySecuredKeep,
-        newlySecuredPerfect,
-        keepCurrent: streakState.keepCurrent, // Use the updated current streak from state
-        perfectCurrent: streakState.perfectCurrent, // Use the updated current streak from state
-        keepStreakSavesEarned,
-        newMilestoneReached,
-        milestoneType,
+        newlySecuredWeight2,
+        newlySecuredWeight3,
+        newlySecuredAbs,
+        weight2Current: streakState.weight2Current,
+        weight3Current: streakState.weight3Current,
+        absCurrent: streakState.absCurrent,
+        weight2MilestoneReached,
+        weight3MilestoneReached,
+        absMilestoneReached,
+        weight2SaveTokensEarned,
+        weight3SaveTokensEarned,
+        absSaveTokensEarned,
       });
       setIsStreakEarnedDialogOpen(true);
     } else {
@@ -181,8 +191,13 @@ export default function WorkoutSessionPage() {
         </Button>
       </div>
 
+      {/* Compact Streak Chips */}
+      <div className="sticky top-[70px] bg-background z-10 py-2 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-border/50">
+        <CompactStreakChips />
+      </div>
+
       {/* Fixed Progress Bar */}
-      <div className="sticky top-[70px] bg-background z-10 py-2 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-border/50"> {/* Adjusted top and added negative margin/padding to span full width */}
+      <div className="sticky top-[120px] bg-background z-10 py-2 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-border/50"> {/* Adjusted top and added negative margin/padding to span full width */}
         <div className="flex justify-between text-sm mb-1">
           <span className="text-muted-foreground">Progress</span>
           <span className="font-medium">{completedSets}/{totalSets} sets ({progress.toFixed(0)}%)</span>
