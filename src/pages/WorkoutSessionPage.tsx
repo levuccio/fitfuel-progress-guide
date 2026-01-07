@@ -8,7 +8,7 @@ import { ArrowLeft, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { SetRow } from "@/components/workout/SetRow";
 import { RestTimer } from "@/components/workout/RestTimer";
 import { ExerciseProgressChart } from "@/components/workout/ExerciseProgressChart";
-import { SetLog, WorkoutSession, StreakState, WeekSummary } from "@/types/workout";
+import { SetLog, WorkoutSession, StreakState } from "@/types/workout";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -25,6 +25,15 @@ import { StreakEarnedDialog } from "@/components/streak/StreakEarnedDialog";
 import { CompactStreakChips } from "@/components/streak/CompactStreakChips";
 import { getWeekId, getUserTimezone } from "@/lib/date-utils";
 
+function safeParseJson<T>(raw: string | null, fallback: T): T {
+  try {
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function WorkoutSessionPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
@@ -38,7 +47,6 @@ export default function WorkoutSessionPage() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isCompleteWorkoutDialogOpen, setIsCompleteWorkoutDialogOpen] = useState(false);
 
-  // Keep a snapshot so the page doesn't flip to "Loading..." when activeSession is cleared on completion
   const [sessionSnapshot, setSessionSnapshot] = useState<WorkoutSession | null>(null);
 
   const [isStreakEarnedDialogOpen, setIsStreakEarnedDialogOpen] = useState(false);
@@ -125,34 +133,37 @@ export default function WorkoutSessionPage() {
   const handleCompleteWorkout = () => {
     if (!activeSession) return;
 
-    // snapshot BEFORE completeSession clears activeSession
     setSessionSnapshot(activeSession);
 
-    const prevStreakState: StreakState = JSON.parse(localStorage.getItem("fittrack_streak_state") || "{}");
+    const prevStreakState: StreakState = safeParseJson(localStorage.getItem("fittrack_streak_state"), {} as StreakState);
 
     const result = completeSession();
     if (!result) return;
 
     const { completedSession, streakQualification } = result;
 
-    const newStreakState: StreakState = JSON.parse(localStorage.getItem("fittrack_streak_state") || "{}");
-    const newWeekSummaries: WeekSummary[] = JSON.parse(localStorage.getItem("fittrack_week_summaries") || "[]");
+    const newStreakState: StreakState = safeParseJson(localStorage.getItem("fittrack_streak_state"), {} as StreakState);
 
+    // Compute qualification for THIS WEEK immediately from sessions (no dependency on async week summary rebuilding)
+    const allSessions: WorkoutSession[] = safeParseJson(localStorage.getItem("fittrack_sessions"), []);
     const tz = completedSession.tz || getUserTimezone();
     const completedAt = completedSession.completedAt || completedSession.endTime || completedSession.startTime;
     const weekId = getWeekId(new Date(completedAt), tz);
 
-    const ws = newWeekSummaries.find((w) => w.weekId === weekId);
+    const sessionsInWeek = allSessions.filter((s) => {
+      if (s.status !== "completed") return false;
+      const ts = s.completedAt || s.endTime || s.startTime;
+      const stz = s.tz || tz;
+      return getWeekId(new Date(ts), stz) === weekId;
+    });
 
-    const effectiveWeightsCountThisWeek = (ws?.weightsCount || 0) + (ws?.weightsCarryoverApplied || 0);
-    const effectiveAbsCountThisWeek = (ws?.absCount || 0) + (ws?.absCarryoverApplied || 0);
+    const weightsCountThisWeek = sessionsInWeek.filter((s) => s.didWeights).length;
+    const absCountThisWeek = sessionsInWeek.filter((s) => s.didAbs).length;
 
-    const qualifiedWeight2ThisWeek = effectiveWeightsCountThisWeek >= 2;
-    const qualifiedWeight3ThisWeek = effectiveWeightsCountThisWeek >= 3;
-    const qualifiedAbsThisWeek = effectiveAbsCountThisWeek >= 1;
+    const qualifiedWeight2ThisWeek = weightsCountThisWeek >= 2;
+    const qualifiedWeight3ThisWeek = weightsCountThisWeek >= 3;
+    const qualifiedAbsThisWeek = absCountThisWeek >= 1;
 
-    // For the dialog, show finalized streak +1 if this week is qualified (same logic as chips / streak page)
-    // IMPORTANT: use finalized values (from streak state) not provisional ones.
     const finalizedW2 = prevStreakState.weight2Current || 0;
     const finalizedW3 = prevStreakState.weight3Current || 0;
     const finalizedAbs = prevStreakState.absCurrent || 0;
