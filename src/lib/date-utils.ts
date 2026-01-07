@@ -1,5 +1,5 @@
 import { getISOWeek, getISOWeekYear, addWeeks, subWeeks, format, startOfWeek, endOfWeek } from "date-fns";
-import * as dateFnsTz from "date-fns-tz"; // Changed to wildcard import
+import { utcToZonedTime, zonedTimeToUtc } from "date-fns-tz"; // Reverted to direct named imports
 
 // Helper to get the user's current timezone
 export const getUserTimezone = (): string => {
@@ -11,7 +11,7 @@ export const getUserTimezone = (): string => {
  * Week starts Monday 00:00:00, ends Sunday 23:59:59.
  */
 export function getWeekId(date: Date, tz: string): string {
-  const zonedDate = dateFnsTz.utcToZonedTime(date, tz); // Use dateFnsTz.utcToZonedTime
+  const zonedDate = utcToZonedTime(date, tz); // Use direct import
   const year = getISOWeekYear(zonedDate);
   const week = getISOWeek(zonedDate);
   return `${year}-W${String(week).padStart(2, '0')}`;
