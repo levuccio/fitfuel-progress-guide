@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { StreakEarnedDialog } from "@/components/streak/StreakEarnedDialog";
+import { WeeklyRewardDialog, WeeklyRewardDialogData } from "@/components/streak/WeeklyRewardDialog";
 import { CompactStreakChips } from "@/components/streak/CompactStreakChips";
 import { getWeekId, getUserTimezone } from "@/lib/date-utils";
 
@@ -63,6 +64,11 @@ export default function WorkoutSessionPage() {
     weight3SaveTokensEarned: 0,
     absSaveTokensEarned: 0,
   });
+
+  const [isWeeklyRewardOpen, setIsWeeklyRewardOpen] = useState(false);
+  const [weeklyRewardData, setWeeklyRewardData] = useState<WeeklyRewardDialogData | null>(null);
+
+  const [queuedStreakDialog, setQueuedStreakDialog] = useState(false);
 
   const template = templates.find((t) => t.id === templateId);
   const lastSessionData = templateId ? getLastSessionData(templateId) : null;
@@ -159,6 +165,7 @@ export default function WorkoutSessionPage() {
       localStorage.getItem("fittrack_sessions"),
       []
     );
+
     const tz = completedSession.tz || getUserTimezone();
     const completedAt =
       completedSession.completedAt || completedSession.endTime || completedSession.startTime;
@@ -173,6 +180,46 @@ export default function WorkoutSessionPage() {
 
     const weightsCountThisWeek = sessionsInWeek.filter((s) => s.didWeights).length;
     const absCountThisWeek = sessionsInWeek.filter((s) => s.didAbs).length;
+
+    // Compute counts BEFORE this completion by subtracting this session's contribution
+    const weightsBefore = Math.max(0, weightsCountThisWeek - (completedSession.didWeights ? 1 : 0));
+    const absBefore = Math.max(0, absCountThisWeek - (completedSession.didAbs ? 1 : 0));
+
+    const weightsBonusBefore = Math.max(0, weightsBefore - 3);
+    const weightsBonusAfter = Math.max(0, weightsCountThisWeek - 3);
+    const weightsBonusEarnedNow = weightsBonusAfter - weightsBonusBefore;
+
+    const absBonusBefore = Math.max(0, absBefore - 1);
+    const absBonusAfter = Math.max(0, absCountThisWeek - 1);
+    const absBonusEarnedNow = absBonusAfter - absBonusBefore;
+
+    const qualifiesWeeklyFirstWeights = completedSession.didWeights && weightsBefore === 0;
+    const qualifiesWeeklyFirstAbs = completedSession.didAbs && absBefore === 0;
+
+    const qualifiesWeeklyBonusWeights = completedSession.didWeights && weightsBonusEarnedNow > 0;
+    const qualifiesWeeklyBonusAbs = completedSession.didAbs && absBonusEarnedNow > 0;
+
+    // First weekly reward has priority, otherwise show bonus-earned
+    const weeklyReward: WeeklyRewardDialogData | null =
+      qualifiesWeeklyFirstWeights
+        ? { type: "weekly-first", category: "weights", countThisWeek: weightsCountThisWeek, bonusTokensEarnedNow: 0 }
+        : qualifiesWeeklyFirstAbs
+          ? { type: "weekly-first", category: "abs", countThisWeek: absCountThisWeek, bonusTokensEarnedNow: 0 }
+          : qualifiesWeeklyBonusWeights
+            ? {
+                type: "weekly-bonus",
+                category: "weights",
+                countThisWeek: weightsCountThisWeek,
+                bonusTokensEarnedNow: weightsBonusEarnedNow,
+              }
+            : qualifiesWeeklyBonusAbs
+              ? {
+                  type: "weekly-bonus",
+                  category: "abs",
+                  countThisWeek: absCountThisWeek,
+                  bonusTokensEarnedNow: absBonusEarnedNow,
+                }
+              : null;
 
     const qualifiedWeight2ThisWeek = weightsCountThisWeek >= 2;
     const qualifiedWeight3ThisWeek = weightsCountThisWeek >= 3;
@@ -210,7 +257,7 @@ export default function WorkoutSessionPage() {
     const absSaveTokensEarned =
       (newStreakState.absSaveTokens || 0) - (prevStreakState.absSaveTokens || 0);
 
-    const shouldShowDialog =
+    const shouldShowStreakDialog =
       newlySecuredWeight2 ||
       newlySecuredWeight3 ||
       newlySecuredAbs ||
@@ -221,7 +268,7 @@ export default function WorkoutSessionPage() {
       weight3SaveTokensEarned > 0 ||
       absSaveTokensEarned > 0;
 
-    if (shouldShowDialog) {
+    if (shouldShowStreakDialog) {
       setStreakDialogProps({
         newlySecuredWeight2,
         newlySecuredWeight3,
@@ -236,10 +283,34 @@ export default function WorkoutSessionPage() {
         weight3SaveTokensEarned,
         absSaveTokensEarned,
       });
-      setIsStreakEarnedDialogOpen(true);
-    } else {
-      navigate("/");
     }
+
+    if (weeklyReward) {
+      setWeeklyRewardData(weeklyReward);
+      setIsWeeklyRewardOpen(true);
+      setQueuedStreakDialog(shouldShowStreakDialog);
+      return;
+    }
+
+    if (shouldShowStreakDialog) {
+      setIsStreakEarnedDialogOpen(true);
+      return;
+    }
+
+    navigate("/");
+  };
+
+  const handleCloseWeeklyReward = () => {
+    setIsWeeklyRewardOpen(false);
+
+    if (queuedStreakDialog) {
+      setQueuedStreakDialog(false);
+      setIsStreakEarnedDialogOpen(true);
+      return;
+    }
+
+    setSessionSnapshot(null);
+    navigate("/");
   };
 
   const handleCloseStreakDialog = () => {
@@ -376,6 +447,12 @@ export default function WorkoutSessionPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <WeeklyRewardDialog
+        isOpen={isWeeklyRewardOpen}
+        onClose={handleCloseWeeklyReward}
+        data={weeklyRewardData}
+      />
 
       <StreakEarnedDialog
         isOpen={isStreakEarnedDialogOpen}
