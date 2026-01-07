@@ -127,11 +127,21 @@ export function useStreakData() {
       return { newMilestoneAwarded, newSaveTokens };
     };
 
-    const w2 = checkAndAward("weight2", updatedState.weight2Best, updatedState.weight2MilestoneAwarded, updatedState.weight2SaveTokens);
+    const w2 = checkAndAward(
+      "weight2",
+      updatedState.weight2Best,
+      updatedState.weight2MilestoneAwarded,
+      updatedState.weight2SaveTokens
+    );
     updatedState.weight2MilestoneAwarded = w2.newMilestoneAwarded;
     updatedState.weight2SaveTokens = w2.newSaveTokens;
 
-    const w3 = checkAndAward("weight3", updatedState.weight3Best, updatedState.weight3MilestoneAwarded, updatedState.weight3SaveTokens);
+    const w3 = checkAndAward(
+      "weight3",
+      updatedState.weight3Best,
+      updatedState.weight3MilestoneAwarded,
+      updatedState.weight3SaveTokens
+    );
     updatedState.weight3MilestoneAwarded = w3.newMilestoneAwarded;
     updatedState.weight3SaveTokens = w3.newSaveTokens;
 
@@ -217,9 +227,8 @@ export function useStreakData() {
     const targetWeekId = target === "this" ? currentWeekId : getNextWeekId(currentWeekId);
 
     setStreakState((prevStreakState) => {
-      const hasCredit = type === "weights"
-        ? prevStreakState.weightCarryoverCredits > 0
-        : prevStreakState.absCarryoverCredits > 0;
+      const hasCredit =
+        type === "weights" ? prevStreakState.weightCarryoverCredits > 0 : prevStreakState.absCarryoverCredits > 0;
 
       if (!hasCredit) {
         toast.error(`No ${type} bonus tokens available.`);
@@ -240,9 +249,7 @@ export function useStreakData() {
       updateWeekSummary(nextSummary);
 
       toast.success(`Applied 1 ${type} bonus token`, {
-        description: target === "this"
-          ? "Your current week progress was updated."
-          : "Saved for next week.",
+        description: target === "this" ? "Your current week progress was updated." : "Saved for next week.",
       });
 
       return {
@@ -254,6 +261,39 @@ export function useStreakData() {
       };
     });
   }, [currentWeekId, getWeekSummary, initWeekSummary, updateWeekSummary]);
+
+  // Used by WorkoutSessionPage to decide whether to show the "streak earned" dialog.
+  // Note: week summaries are still derived from sessions; this only computes "newly secured" flags.
+  const onWorkoutCompleted = useCallback((completedSession: WorkoutSession) => {
+    const tzFallback = getUserTimezone();
+
+    const normalizedNewSession: WorkoutSession = {
+      ...completedSession,
+      completedAt: completedSession.completedAt ?? getSessionCompletionTimestamp(completedSession),
+      tz: completedSession.tz ?? tzFallback,
+      didWeights: inferDidWeights(completedSession),
+      didAbs: inferDidAbs(completedSession),
+    };
+
+    const weekId = getWeekId(new Date(normalizedNewSession.completedAt!), normalizedNewSession.tz!);
+
+    const prevSummary = getWeekSummary(weekId) || initWeekSummary(weekId);
+
+    const prevEffectiveWeights = prevSummary.weightsCount + (prevSummary.weightsCarryoverApplied || 0);
+    const prevEffectiveAbs = prevSummary.absCount + (prevSummary.absCarryoverApplied || 0);
+
+    const nextWeightsCount = prevSummary.weightsCount + (normalizedNewSession.didWeights ? 1 : 0);
+    const nextAbsCount = prevSummary.absCount + (normalizedNewSession.didAbs ? 1 : 0);
+
+    const nextEffectiveWeights = nextWeightsCount + (prevSummary.weightsCarryoverApplied || 0);
+    const nextEffectiveAbs = nextAbsCount + (prevSummary.absCarryoverApplied || 0);
+
+    return {
+      newlySecuredWeight2: prevEffectiveWeights < 2 && nextEffectiveWeights >= 2,
+      newlySecuredWeight3: prevEffectiveWeights < 3 && nextEffectiveWeights >= 3,
+      newlySecuredAbs: prevEffectiveAbs < 1 && nextEffectiveAbs >= 1,
+    };
+  }, [getWeekSummary, initWeekSummary]);
 
   // Migration for schema changes + legacy sessions
   useEffect(() => {
@@ -280,7 +320,6 @@ export function useStreakData() {
       ...prev,
       weightCarryoverCredits: (prev as any).weightCarryoverCredits ?? (prev as any).generalCarryoverCredits ?? 0,
       absCarryoverCredits: (prev as any).absCarryoverCredits ?? 0,
-      // keep the old generalCarryoverCredits if it exists, but we no longer use it
       weight2Current: 0,
       weight3Current: 0,
       absCurrent: 0,
