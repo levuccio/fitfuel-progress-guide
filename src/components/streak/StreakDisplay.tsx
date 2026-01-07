@@ -62,7 +62,11 @@ export function StreakDisplay() {
                 </span>
                 <span className="font-medium">{weight3Progress.toFixed(0)}%</span>
               </div>
-              <Progress value={weight3Progress} className="h-2" indicatorColor={weight3Qualified ? "bg-primary" : "bg-orange-500"} />
+              <Progress
+                value={weight3Progress}
+                className="h-2"
+                indicatorColor={weight3Qualified ? "bg-primary" : "bg-orange-500"}
+              />
             </div>
 
             <div>
@@ -74,22 +78,44 @@ export function StreakDisplay() {
                 </span>
                 <span className="font-medium">{absProgress.toFixed(0)}%</span>
               </div>
-              <Progress value={absProgress} className="h-2" indicatorColor={absQualified ? "bg-primary" : "bg-orange-500"} />
+              <Progress
+                value={absProgress}
+                className="h-2"
+                indicatorColor={absQualified ? "bg-primary" : "bg-orange-500"}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-2">
-              {weight2Qualified ? <CheckCircle className="h-5 w-5 text-success" /> : <XCircle className="h-5 w-5 text-muted-foreground" />}
-              <span className={cn(weight2Qualified ? "text-success" : "text-muted-foreground")}>✅ 2x Weights secured</span>
+              {weight2Qualified ? (
+                <CheckCircle className="h-5 w-5 text-success" />
+              ) : (
+                <XCircle className="h-5 w-5 text-muted-foreground" />
+              )}
+              <span className={cn(weight2Qualified ? "text-success" : "text-muted-foreground")}>
+                ✅ 2x Weights secured
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              {weight3Qualified ? <CheckCircle className="h-5 w-5 text-success" /> : <XCircle className="h-5 w-5 text-muted-foreground" />}
-              <span className={cn(weight3Qualified ? "text-success" : "text-muted-foreground")}>⭐ 3x Weights secured</span>
+              {weight3Qualified ? (
+                <CheckCircle className="h-5 w-5 text-success" />
+              ) : (
+                <XCircle className="h-5 w-5 text-muted-foreground" />
+              )}
+              <span className={cn(weight3Qualified ? "text-success" : "text-muted-foreground")}>
+                ⭐ 3x Weights secured
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              {absQualified ? <CheckCircle className="h-5 w-5 text-success" /> : <XCircle className="h-5 w-5 text-muted-foreground" />}
-              <span className={cn(absQualified ? "text-success" : "text-muted-foreground")}>🧱 Abs secured</span>
+              {absQualified ? (
+                <CheckCircle className="h-5 w-5 text-success" />
+              ) : (
+                <XCircle className="h-5 w-5 text-muted-foreground" />
+              )}
+              <span className={cn(absQualified ? "text-success" : "text-muted-foreground")}>
+                🧱 Abs secured
+              </span>
             </div>
           </div>
         </div>
@@ -142,13 +168,19 @@ export function StreakDisplay() {
             {bonusWeightsEarnedThisWeek > 0 && (
               <div className="flex items-center gap-2">
                 <PlusCircle className="h-4 w-4" />
-                <span>You earned {bonusWeightsEarnedThisWeek} weights bonus token{bonusWeightsEarnedThisWeek > 1 ? "s" : ""} this week!</span>
+                <span>
+                  You earned {bonusWeightsEarnedThisWeek} weights bonus token
+                  {bonusWeightsEarnedThisWeek > 1 ? "s" : ""} this week!
+                </span>
               </div>
             )}
             {bonusAbsEarnedThisWeek > 0 && (
               <div className="flex items-center gap-2">
                 <PlusCircle className="h-4 w-4" />
-                <span>You earned {bonusAbsEarnedThisWeek} abs bonus token{bonusAbsEarnedThisWeek > 1 ? "s" : ""} this week!</span>
+                <span>
+                  You earned {bonusAbsEarnedThisWeek} abs bonus token
+                  {bonusAbsEarnedThisWeek > 1 ? "s" : ""} this week!
+                </span>
               </div>
             )}
           </div>
@@ -161,13 +193,16 @@ export function StreakDisplay() {
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2 text-sm text-blue-500">
                   <PlusCircle className="h-5 w-5" />
-                  <span>Bonus tokens: Weights {streakState.weightCarryoverCredits} • Abs {streakState.absCarryoverCredits}</span>
+                  <span>
+                    Bonus tokens: Weights {streakState.weightCarryoverCredits} • Abs{" "}
+                    {streakState.absCarryoverCredits}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Select value={applyTarget} onValueChange={(v) => setApplyTarget(v as "this" | "next")}>
                     <SelectTrigger className="w-36 h-8">
-                      <SelectValue />
+                      <SelectValue placeholder="Apply to" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="this">This week</SelectItem>
@@ -184,7 +219,7 @@ export function StreakDisplay() {
                   className="text-blue-500 border-blue-500 hover:bg-blue-500/10 flex-1"
                   disabled={streakState.weightCarryoverCredits <= 0}
                 >
-                  Apply 1 weights token
+                  Apply 1 weights token to {applyTarget === "this" ? "this week" : "next week"}
                 </Button>
                 <Button
                   onClick={() => applyCarryoverCredit("abs", applyTarget)}
@@ -192,7 +227,7 @@ export function StreakDisplay() {
                   className="text-blue-500 border-blue-500 hover:bg-blue-500/10 flex-1"
                   disabled={streakState.absCarryoverCredits <= 0}
                 >
-                  Apply 1 abs token
+                  Apply 1 abs token to {applyTarget === "this" ? "this week" : "next week"}
                 </Button>
               </div>
             </CardContent>
