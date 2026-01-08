@@ -11,7 +11,7 @@ const SESSIONS_KEY = "fittrack_sessions";
 const USER_ID = "default";
 
 const STREAK_MIGRATION_KEY = "fittrack_streak_migration_version";
-const STREAK_MIGRATION_VERSION = 2;
+const STREAK_MIGRATION_VERSION = 3;
 
 const MILESTONE_THRESHOLDS = [4, 8, 12, 16, 24, 36, 52];
 
@@ -174,9 +174,33 @@ export function useStreakData() {
     setStreakState((prevStreakState) => {
       let current = { ...prevStreakState };
       const lastFinalized = current.lastFinalizedWeekId;
-      const weeksToFinalize = getWeekIdsBetween(lastFinalized, prevWeekId(currentWeekId));
+      let weeksToFinalize: string[] = [];
 
-      if (weeksToFinalize.length === 0 && lastFinalized === prevWeekId(currentWeekId)) {
+      if (!lastFinalized) {
+        const allWeeks = weekSummaries.map((ws) => ws.weekId).sort();
+        // If we have history, start from before the first week to ensure it's processed
+        if (allWeeks.length > 0) {
+          const firstWeek = allWeeks[0];
+          // getWeekIdsBetween is safe to call with undefined start, but to be explicit:
+          // We want weeksToFinalize to include firstWeek. 
+          // getWeekIdsBetween(A, B) returns (A, B].
+          // So if we pass prevWeekId(firstWeek), it returns [firstWeek ... B].
+          // However, we must ensure consistency with date-utils.
+          // Let's assume date-utils handles undefined start by going back enough? 
+          // Actually, getWeekIdsBetween(undefined, end) returns [end]. That's the bug.
+
+          // Fix: manually construct the range or rely on a known start.
+          // Let's use prevWeekId(firstWeek) as start.
+          weeksToFinalize = getWeekIdsBetween(prevWeekId(firstWeek), prevWeekId(currentWeekId));
+        }
+      } else {
+        weeksToFinalize = getWeekIdsBetween(lastFinalized, prevWeekId(currentWeekId));
+      }
+
+      if (
+        weeksToFinalize.length === 0 &&
+        lastFinalized === prevWeekId(currentWeekId)
+      ) {
         return prevStreakState;
       }
 
@@ -385,7 +409,7 @@ export function useStreakData() {
 
     // Use REF here to get latest summaries without infinite loop
     const prev = weekSummariesRef.current;
-    
+
     const prevMap = new Map(prev.map((p) => [p.weekId, p]));
     const next: WeekSummary[] = [];
 
@@ -482,6 +506,6 @@ export function useStreakData() {
     // NEW: expose derived balances
     weightBonusBalance,
     absBonusBalance,
-    recalculateStreaksFromDeletion: () => {},
+    recalculateStreaksFromDeletion: () => { },
   };
 }
