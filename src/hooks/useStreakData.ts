@@ -267,18 +267,7 @@ export function useStreakData() {
             // OR: We store 'rescuePending' in the state, and the UI decides if it's actionable.
 
             // Let's check if we've already asked the user about this week
-            if (!current.rescueIgnoredWeeks?.includes(weekId)) {
-              const missing = Math.max(1, 2 - effectiveWeightsCount);
-              // Pause everything!
-              return {
-                ...current,
-                rescueInProgress: {
-                  weekId,
-                  type: "weights",
-                  cost: missing
-                }
-              };
-            }
+
 
             // If we are here, rescue was ignored or not possible. Reset streak.
             current.weight2Current = 0;
