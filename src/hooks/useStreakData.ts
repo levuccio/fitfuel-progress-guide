@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocalStorage } from "./useLocalStorage";
 import { WeekSummary, StreakState, WorkoutSession } from "@/types/workout";
 import { getWeekId, prevWeekId, getWeekIdsBetween, getUserTimezone } from "@/lib/date-utils";
@@ -64,11 +64,20 @@ export function useStreakData() {
   });
   const [sessions, setSessions] = useLocalStorage<WorkoutSession[]>(SESSIONS_KEY, []);
 
+  // Ref to track latest weekSummaries without triggering effects
+  const weekSummariesRef = useRef(weekSummaries);
+  useEffect(() => {
+    weekSummariesRef.current = weekSummaries;
+  }, [weekSummaries]);
+
   const userTimezone = useMemo(getUserTimezone, []);
   const currentWeekId = useMemo(() => getWeekId(new Date(), userTimezone), [userTimezone]);
 
   const getWeekSummary = useCallback(
     (weekId: string): WeekSummary | undefined => {
+      // Use ref for reading inside callbacks if needed, but here we can use state directly since this 
+      // is usually used in event handlers or render path. 
+      // However, to be safe and consistent with the "source of truth" problem, let's use the state.
       return weekSummaries.find((ws) => ws.userId === USER_ID && ws.weekId === weekId);
     },
     [weekSummaries]
@@ -374,7 +383,9 @@ export function useStreakData() {
       byWeek.set(weekId, cur);
     }
 
-    const prev = weekSummaries;
+    // Use REF here to get latest summaries without infinite loop
+    const prev = weekSummariesRef.current;
+    
     const prevMap = new Map(prev.map((p) => [p.weekId, p]));
     const next: WeekSummary[] = [];
 
@@ -405,7 +416,11 @@ export function useStreakData() {
       });
     }
 
-    setWeekSummaries(next);
+    // Deep compare to avoid unnecessary updates if nothing changed
+    // JSON stringify is crude but effective for small objects
+    if (JSON.stringify(prev) !== JSON.stringify(next)) {
+      setWeekSummaries(next);
+    }
 
     // Reset current streaks so finalizeUpToCurrentWeek can rebuild them
     setStreakState((prevState) => ({
@@ -415,7 +430,7 @@ export function useStreakData() {
       absCurrent: 0,
       lastFinalizedWeekId: undefined,
     }));
-  }, [initWeekSummary, sessions, setStreakState, setWeekSummaries, weekSummaries]);
+  }, [initWeekSummary, sessions, setStreakState, setWeekSummaries]); // weekSummaries intentionally omitted
 
   useEffect(() => {
     finalizeUpToCurrentWeek();

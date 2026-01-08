@@ -1,4 +1,5 @@
-import { StreakDisplay } from "@/components/streak/StreakDisplay";
+﻿import { StreakDisplay } from "@/components/streak/StreakDisplay";
+import { StrengthStreakDashboard } from "@/components/streak/StrengthStreakDashboard";
 
 export default function StreaksPage() {
   return (
@@ -8,6 +9,7 @@ export default function StreaksPage() {
         <p className="text-muted-foreground">Track your workout consistency and milestones</p>
       </div>
       <StreakDisplay />
+      <StrengthStreakDashboard />
     </div>
   );
 }

@@ -1,13 +1,14 @@
 import { useCallback } from "react";
 import { useLocalStorage } from "./useLocalStorage";
 import { ActivityData, ActivityLog, SquashGame } from "@/types/activity";
+import { INITIAL_USER_DATA } from "@/data/initial-user-data";
 
 const ACTIVITY_DATA_KEY = "fittrack_activity_data";
 
 export function useActivityData() {
   const [activityData, setActivityData] = useLocalStorage<ActivityData>(
     ACTIVITY_DATA_KEY,
-    { activityLogs: [], squashGames: [] }
+    (INITIAL_USER_DATA.activityData as unknown) as ActivityData
   );
 
   const addActivityLog = useCallback((log: ActivityLog) => {

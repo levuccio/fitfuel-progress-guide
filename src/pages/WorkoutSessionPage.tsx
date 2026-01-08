@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useWorkoutData } from "@/hooks/useWorkoutData";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,9 @@ import { ArrowLeft, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { SetRow } from "@/components/workout/SetRow";
 import { RestTimer } from "@/components/workout/RestTimer";
 import { ExerciseProgressChart } from "@/components/workout/ExerciseProgressChart";
+import { StrengthChipBar } from "@/components/workout/StrengthChipBar";
+import { ExerciseNavigation } from "@/components/workout/ExerciseNavigation";
+import { ExerciseHistory } from "@/components/workout/ExerciseHistory";
 import { SetLog, WorkoutSession, StreakState } from "@/types/workout";
 import { cn } from "@/lib/utils";
 import {
@@ -24,6 +27,8 @@ import { StreakEarnedDialog } from "@/components/streak/StreakEarnedDialog";
 import { WeeklyRewardDialog, WeeklyRewardDialogData } from "@/components/streak/WeeklyRewardDialog";
 import { CompactStreakChips } from "@/components/streak/CompactStreakChips";
 import { getWeekId, getUserTimezone } from "@/lib/date-utils";
+import { useStrengthAnalytics } from "@/hooks/useStrengthAnalytics";
+import { calculateE10RM } from "@/lib/strength-utils";
 
 function safeParseJson<T>(raw: string | null, fallback: T): T {
   try {
@@ -39,6 +44,7 @@ export default function WorkoutSessionPage() {
   const navigate = useNavigate();
   const { templates, activeSession, startSession, updateActiveSession, completeSession, pauseSession, getLastSessionData } =
     useWorkoutData();
+  const { getExerciseStats } = useStrengthAnalytics();
 
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [isResting, setIsResting] = useState(false);
@@ -63,6 +69,7 @@ export default function WorkoutSessionPage() {
     weight2SaveTokensEarned: 0,
     weight3SaveTokensEarned: 0,
     absSaveTokensEarned: 0,
+    improvements: [] as { name: string; old: number; new: number; percent: number }[],
   });
 
   const [isWeeklyRewardOpen, setIsWeeklyRewardOpen] = useState(false);
@@ -85,15 +92,30 @@ export default function WorkoutSessionPage() {
     }
   }, [template, templateId, activeSession, startSession]);
 
+  // Use refs to store active session start time and status to prevent interval resets
+  const activeSessionStartTime = activeSession?.startTime;
+  const activeSessionStatus = activeSession?.status;
+
   useEffect(() => {
-    if (!activeSession || activeSession.status !== "in_progress") return;
+    if (!activeSessionStartTime || activeSessionStatus !== "in_progress") return;
+
+    // Initial update
+    setElapsedTime(
+      Math.floor((Date.now() - new Date(activeSessionStartTime).getTime()) / 1000)
+    );
+
     const interval = setInterval(() => {
       setElapsedTime(
-        Math.floor((Date.now() - new Date(activeSession.startTime).getTime()) / 1000)
+        Math.floor((Date.now() - new Date(activeSessionStartTime).getTime()) / 1000)
       );
     }, 1000);
+
     return () => clearInterval(interval);
-  }, [activeSession]);
+  }, [activeSessionStartTime, activeSessionStatus]);
+
+  const handleRestTimerComplete = useCallback(() => {
+    setIsResting(false);
+  }, []);
 
   const sessionForRender = activeSession ?? sessionSnapshot;
 
@@ -107,6 +129,11 @@ export default function WorkoutSessionPage() {
     0
   );
   const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
+
+  const totalExercises = sessionForRender.exercises.length;
+  const completedExercises = sessionForRender.exercises.filter((e) =>
+    e.sets.every((s) => s.completed)
+  ).length;
 
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -137,12 +164,15 @@ export default function WorkoutSessionPage() {
     }
   };
 
-  const handleRestTimerComplete = () => {
-    setIsResting(false);
-  };
-
   const handleCompleteWorkout = () => {
     if (!activeSession) return;
+
+    // 1. Calculate stats BEFORE completion (previous best)
+    const improvementMap = new Map<string, number>();
+    activeSession.exercises.forEach(ex => {
+      const stats = getExerciseStats(ex.exerciseId);
+      improvementMap.set(ex.exerciseId, stats?.best10RM || 0);
+    });
 
     setSessionSnapshot(activeSession);
 
@@ -151,10 +181,33 @@ export default function WorkoutSessionPage() {
       {} as StreakState
     );
 
+    // 2. Complete session
     const result = completeSession();
     if (!result) return;
 
     const { completedSession, streakQualification } = result;
+
+    // 3. Calculate NEW bests from THIS session (Improvements)
+    const improvements: { name: string; old: number; new: number; percent: number }[] = [];
+
+    completedSession.exercises.forEach(ex => {
+      const prevBest = improvementMap.get(ex.exerciseId) || 0;
+
+      const sets = ex.sets.filter(s => s.completed && s.weight > 0 && s.reps > 0);
+      if (sets.length === 0) return;
+
+      const currentBest = Math.max(...sets.map(s => calculateE10RM(s.weight, s.reps)));
+
+      if (currentBest > prevBest) {
+        const percent = prevBest > 0 ? ((currentBest - prevBest) / prevBest) * 100 : 100;
+        improvements.push({
+          name: ex.exercise.name,
+          old: prevBest,
+          new: currentBest,
+          percent
+        });
+      }
+    });
 
     const newStreakState: StreakState = safeParseJson(
       localStorage.getItem("fittrack_streak_state"),
@@ -207,18 +260,18 @@ export default function WorkoutSessionPage() {
           ? { type: "weekly-first", category: "abs", countThisWeek: absCountThisWeek, bonusTokensEarnedNow: 0 }
           : qualifiesWeeklyBonusWeights
             ? {
-                type: "weekly-bonus",
-                category: "weights",
-                countThisWeek: weightsCountThisWeek,
-                bonusTokensEarnedNow: weightsBonusEarnedNow,
-              }
+              type: "weekly-bonus",
+              category: "weights",
+              countThisWeek: weightsCountThisWeek,
+              bonusTokensEarnedNow: weightsBonusEarnedNow,
+            }
             : qualifiesWeeklyBonusAbs
               ? {
-                  type: "weekly-bonus",
-                  category: "abs",
-                  countThisWeek: absCountThisWeek,
-                  bonusTokensEarnedNow: absBonusEarnedNow,
-                }
+                type: "weekly-bonus",
+                category: "abs",
+                countThisWeek: absCountThisWeek,
+                bonusTokensEarnedNow: absBonusEarnedNow,
+              }
               : null;
 
     const qualifiedWeight2ThisWeek = weightsCountThisWeek >= 2;
@@ -266,7 +319,8 @@ export default function WorkoutSessionPage() {
       absMilestoneReached ||
       weight2SaveTokensEarned > 0 ||
       weight3SaveTokensEarned > 0 ||
-      absSaveTokensEarned > 0;
+      absSaveTokensEarned > 0 ||
+      improvements.length > 0;
 
     if (shouldShowStreakDialog) {
       setStreakDialogProps({
@@ -282,6 +336,7 @@ export default function WorkoutSessionPage() {
         weight2SaveTokensEarned,
         weight3SaveTokensEarned,
         absSaveTokensEarned,
+        improvements,
       });
     }
 
@@ -345,13 +400,17 @@ export default function WorkoutSessionPage() {
         </Button>
       </div>
 
-      <div className="sticky top-[70px] bg-background z-10 py-2 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-border/50">
-        <CompactStreakChips />
+      <div className="sticky top-[70px] bg-background z-20 pt-2 pb-0 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-border/50">
+        <ExerciseNavigation
+          exercises={sessionForRender.exercises}
+          activeExerciseId={expandedExercise || sessionForRender.exercises[0].id}
+          onSelect={setExpandedExercise}
+        />
       </div>
 
-      <div className="sticky top-[120px] bg-background z-10 py-2 -mx-4 px-4 md:-mx-6 md:px-6 border-b border-border/50">
+      <div className="sticky top-[120px] bg-background z-20 px-4 md:px-0 py-2 border-b border-border/50">
         <div className="flex justify-between text-sm mb-1">
-          <span className="text-muted-foreground">Progress</span>
+          <span className="text-muted-foreground">Workout Progress</span>
           <span className="font-medium">
             {completedSets}/{totalSets} sets ({progress.toFixed(0)}%)
           </span>
@@ -359,9 +418,11 @@ export default function WorkoutSessionPage() {
         <Progress value={progress} className="h-2" />
       </div>
 
-      <div className="space-y-3 pt-4">
+      <div className="space-y-6 pt-4">
         {sessionForRender.exercises.map((exercise) => {
-          const isExpanded = expandedExercise === exercise.id;
+          // Only render the active exercise
+          if (exercise.id !== (expandedExercise || sessionForRender.exercises[0].id)) return null;
+
           const exerciseCompleted = exercise.sets.every((s) => s.completed);
           const lastData = lastSessionData?.[exercise.exerciseId];
           const isAbsExercise = exercise.exercise.targetMuscles.some((muscle) =>
@@ -369,52 +430,49 @@ export default function WorkoutSessionPage() {
           );
 
           return (
-            <Card
-              key={exercise.id}
-              className={cn("glass-card", exerciseCompleted && "border-success/50")}
-            >
-              <CardHeader
-                className="p-4 cursor-pointer"
-                onClick={() => setExpandedExercise(isExpanded ? null : exercise.id)}
+            <div key={exercise.id} className="animate-in fade-in slide-in-from-right-4 duration-300">
+              <Card
+                className={cn("glass-card border-2", exerciseCompleted ? "border-success shadow-[0_0_15px_-3px_rgba(34,197,94,0.4)]" : "border-border/50")}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">{exercise.exercise.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {exercise.targetSets} × {exercise.targetReps}
-                    </p>
+                <CardHeader className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl">{exercise.exercise.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Target: {exercise.targetSets} sets × {exercise.targetReps} reps
+                      </p>
+                    </div>
+                    {exerciseCompleted && (
+                      <div className="bg-success/10 text-success p-2 rounded-full">
+                        <Check className="h-6 w-6" />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {exerciseCompleted && <Check className="h-5 w-5" />}
-                    {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </CardHeader>
+                <CardContent className="p-4 pt-0 space-y-4">
+                  {!isAbsExercise && <StrengthChipBar exerciseId={exercise.exerciseId} sets={exercise.sets} />}
+
+                  {/* Sets List */}
+                  <div className="space-y-3">
+                    {exercise.sets.map((set, idx) => (
+                      <SetRow
+                        key={set.id}
+                        set={set}
+                        lastSetData={lastData?.sets[idx]}
+                        onUpdate={(s) => handleSetUpdate(exercise.id, s)}
+                        isAbsExercise={isAbsExercise}
+                        exerciseId={exercise.exerciseId}
+                      />
+                    ))}
                   </div>
-                </div>
-              </CardHeader>
-              {isExpanded && (
-                <CardContent className="p-4 pt-0 space-y-2">
+
                   {!isAbsExercise && <ExerciseProgressChart exerciseId={exercise.exerciseId} />}
-
-                  {lastData && !isAbsExercise && (
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Last:{" "}
-                      {lastData.sets
-                        .map((s) => `${s.weight}kg×${s.reps}`)
-                        .join(", ")}
-                    </p>
-                  )}
-
-                  {exercise.sets.map((set, idx) => (
-                    <SetRow
-                      key={set.id}
-                      set={set}
-                      lastSetData={lastData?.sets[idx]}
-                      onUpdate={(s) => handleSetUpdate(exercise.id, s)}
-                      isAbsExercise={isAbsExercise}
-                    />
-                  ))}
                 </CardContent>
-              )}
-            </Card>
+              </Card>
+
+              {/* History Section Below Card */}
+              <ExerciseHistory exerciseId={exercise.exerciseId} />
+            </div>
           );
         })}
       </div>

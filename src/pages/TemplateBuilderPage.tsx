@@ -19,6 +19,7 @@ interface BuilderExercise {
   sets: number;
   reps: string; // Matches TemplateExercise 'reps'
   restSeconds: number;
+  category: "weights" | "abs" | "cardio" | "other";
 }
 
 function normalizeRepsInput(val: string) {
@@ -47,6 +48,7 @@ export default function TemplateBuilderPage() {
             sets: ex.sets,
             reps: ex.reps,
             restSeconds: ex.restSeconds,
+            category: ex.exercise.category || "weights",
           }))
         );
       } else {
@@ -65,6 +67,7 @@ export default function TemplateBuilderPage() {
         sets: 3,
         reps: "8-10",
         restSeconds: 180,
+        category: "weights",
       },
     ]);
   };
@@ -106,6 +109,7 @@ export default function TemplateBuilderPage() {
           targetMuscles: ["N/A"], // Default for custom exercises
           equipment: ["N/A"], // Default for custom exercises
           isCustom: true,
+          category: bEx.category,
         };
         newCustomExercises.push(newExercise);
         exercise = newExercise;
@@ -148,7 +152,7 @@ export default function TemplateBuilderPage() {
       addTemplate(newTemplate);
       toast({ title: "Template created!", description: `"${name}" has been saved.` });
     }
-    
+
     navigate("/");
   };
 
@@ -232,6 +236,24 @@ export default function TemplateBuilderPage() {
                   value={bEx.restSeconds}
                   onChange={e => updateBuilderExercise(bEx.id, "restSeconds", Number(e.target.value))}
                 />
+              </div>
+
+              <div className="flex-1">
+                <Label htmlFor={`category-${bEx.id}`} className="sr-only">Category</Label>
+                <Select
+                  value={bEx.category}
+                  onValueChange={v => updateBuilderExercise(bEx.id, "category", v)}
+                >
+                  <SelectTrigger id={`category-${bEx.id}`}>
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weights">Weights</SelectItem>
+                    <SelectItem value="abs">Abs</SelectItem>
+                    <SelectItem value="cardio">Cardio</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>

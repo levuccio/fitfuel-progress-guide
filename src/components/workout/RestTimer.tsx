@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Play, Pause, RotateCcw, SkipForward, Plus, Minus } from "lucide-react";
@@ -14,93 +14,52 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
   const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
   const [isRunning, setIsRunning] = useState(autoStart);
   const [isComplete, setIsComplete] = useState(false);
+  const onCompleteRef = useRef(onComplete);
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const endTimeRef = useRef<number>(0);
-
-  // Effect to initialize/reset timer when initialSeconds changes
   useEffect(() => {
-    setSecondsLeft(initialSeconds);
-    setIsRunning(autoStart);
-    setIsComplete(false);
-    endTimeRef.current = Date.now() + initialSeconds * 1000; // Set initial end time
-  }, [initialSeconds, autoStart]);
-
-  // Effect for the countdown logic
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
   useEffect(() => {
-    if (!isRunning) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+    if (!isRunning || isComplete) {
       return;
     }
 
-    // If resuming, ensure endTimeRef is updated based on current secondsLeft
-    if (endTimeRef.current === 0 || endTimeRef.current < Date.now()) {
-      endTimeRef.current = Date.now() + secondsLeft * 1000;
-    }
-
-    intervalRef.current = setInterval(() => {
-      const remaining = Math.max(
-        0,
-        Math.round((endTimeRef.current - Date.now()) / 1000)
-      );
-
-      setSecondsLeft(remaining);
-
-      if (remaining === 0) {
-        setIsRunning(false);
-        setIsComplete(true);
-        onComplete?.();
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsRunnning(false);
+          setIsComplete(true);
+          onCompleteRef.current?.();
+          return 0;
         }
-      }
-    }, 250); // Update every 250ms for smoother UI and accuracy
+        return prev - 1;
+      });
+    }, 1000);
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, onComplete, secondsLeft]); // secondsLeft is here for initial endTimeRef update on resume
+    return () => clearInterval(timer);
+  }, [isRunning, isComplete]);
 
   const togglePause = useCallback(() => {
-    if (isRunning) {
-      // Pausing: calculate remaining time
-      const remaining = Math.max(
-        0,
-        Math.round((endTimeRef.current - Date.now()) / 1000)
-      );
-      setSecondsLeft(remaining);
-      setIsRunning(false);
-    } else {
-      // Resuming
-      endTimeRef.current = Date.now() + secondsLeft * 1000;
-      setIsRunning(true);
-    }
-  }, [isRunning, secondsLeft]);
+    setIsRunning((prev) => !prev);
+  }, []);
 
   const resetTimer = useCallback(() => {
     setSecondsLeft(initialSeconds);
-    endTimeRef.current = Date.now() + initialSeconds * 1000;
     setIsComplete(false);
     setIsRunning(true);
   }, [initialSeconds]);
 
   const skipTimer = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
     setSecondsLeft(0);
     setIsRunning(false);
     setIsComplete(true);
-    onComplete?.();
-  }, [onComplete]);
+    onCompleteRef.current?.();
+  }, []);
+
+  const adjustTime = useCallback((delta: number) => {
+    setSecondsLeft((prev) => Math.max(0, prev + delta));
+  }, []);
 
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -108,7 +67,7 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
     return `${mins}:${remainingSecs.toString().padStart(2, "0")}`;
   };
 
-  const progress = (secondsLeft / initialSeconds) * 100;
+  const progress = initialSeconds > 0 ? (secondsLeft / initialSeconds) * 100 : 0;
 
   return (
     <Card className={cn(
@@ -145,7 +104,7 @@ export function RestTimer({ initialSeconds, onComplete, autoStart = true }: Rest
           >
             <Minus className="h-4 w-4" />
           </Button>
-          
+
           <Button
             variant="outline"
             size="icon"
