@@ -11,20 +11,43 @@ const SESSIONS_KEY = "fittrack_sessions";
 const USER_ID = "default";
 
 const STREAK_MIGRATION_KEY = "fittrack_streak_migration_version";
-const STREAK_MIGRATION_VERSION = 3;
+const STREAK_MIGRATION_VERSION = 4;
 
 const MILESTONE_THRESHOLDS = [4, 8, 12, 16, 24, 36, 52];
 
 function inferDidWeights(session: WorkoutSession) {
-  return session.exercises.some(
-    (ex) => ex.exercise.category === "weights" && ex.sets.some((s) => s.completed)
-  );
+  return session.exercises.some((ex) => {
+    const hasCompletedSets = ex.sets.some((s) => s.completed);
+    if (!hasCompletedSets) return false;
+
+    // Primary check: use category if available
+    if (ex.exercise.category === "weights") return true;
+
+    // Fallback for legacy sessions: if category is missing, check if any completed set has weight data
+    if (!ex.exercise.category) {
+      return ex.sets.some((s) => s.completed && s.weight > 0);
+    }
+
+    return false;
+  });
 }
 
 function inferDidAbs(session: WorkoutSession) {
-  return session.exercises.some(
-    (ex) => ex.exercise.category === "abs" && ex.sets.some((s) => s.completed)
-  );
+  return session.exercises.some((ex) => {
+    const hasCompletedSets = ex.sets.some((s) => s.completed);
+    if (!hasCompletedSets) return false;
+
+    // Primary check
+    if (ex.exercise.category === "abs") return true;
+
+    // Fallback: check if exercise targets abs/core muscles
+    if (!ex.exercise.category) {
+      const absRelatedMuscles = ["Abs", "Core", "Obliques", "Lower Abs"];
+      return ex.exercise.targetMuscles?.some((m) => absRelatedMuscles.includes(m)) || false;
+    }
+
+    return false;
+  });
 }
 
 function getSessionCompletionTimestamp(session: WorkoutSession) {
