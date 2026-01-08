@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useStreakData } from "@/hooks/useStreakData";
-import { AlertTriangle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 export function StreakRescueDialog() {
     const { streakState, weightBonusBalance, absBonusBalance, performRescue, ignoreRescue } = useStreakData();
@@ -30,7 +30,7 @@ export function StreakRescueDialog() {
             <DialogContent className="sm:max-w-md border-red-500/50 bg-destructive/5">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-destructive">
-                        <AlertTriangle className="h-5 w-5" />
+                        <AlertCircle className="h-5 w-5" />
                         Streak At Risk!
                     </DialogTitle>
                     <DialogDescription className="pt-2">

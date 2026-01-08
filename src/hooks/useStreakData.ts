@@ -583,8 +583,6 @@ export function useStreakData() {
     performRescue: (weekId: string, type: "weights" | "abs") => {
       // Apply a bonus token safely
       // 1. Apply credit
-      weekSummariesRef.current; // access ref 
-      // Actually we can just call applyCarryoverCredit logic but targeting specific week
       // Reuse applyCarryoverCredit logic but with forced weekId
 
       const existing = weekSummaries.find((ws) => ws.weekId === weekId) || initWeekSummary(weekId);
