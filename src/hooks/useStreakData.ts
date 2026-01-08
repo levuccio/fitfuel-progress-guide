@@ -304,18 +304,6 @@ export function useStreakData() {
           current.absCurrent += 1;
           toast.info(`1 Abs Streak Save Token used for week ${weekId}.`);
         } else {
-          // Check Abs Rescue
-          if (!current.rescueIgnoredWeeks?.includes(weekId)) {
-            // We only pause for Abs if checking weights didn't already pause it.
-            return {
-              ...current,
-              rescueInProgress: {
-                weekId,
-                type: "abs",
-                cost: 1
-              }
-            };
-          }
           current.absCurrent = 0;
         }
 

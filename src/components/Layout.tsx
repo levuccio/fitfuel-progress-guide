@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Dumbbell, History, TrendingUp, UtensilsCrossed, Settings, Flame } from "lucide-react"; // Import Flame icon
 import { cn } from "@/lib/utils";
-import { StreakRescueDialog } from "./streak/StreakRescueDialog";
 
 interface LayoutProps {
   children: ReactNode;
@@ -22,7 +21,6 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <StreakRescueDialog />
       {/* Main content */}
       <main className="flex-1 pb-20 md:pb-0 md:pl-64">
         <div className="container max-w-4xl py-6 px-4 md:px-6">
