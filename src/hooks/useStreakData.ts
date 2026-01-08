@@ -11,7 +11,8 @@ const SESSIONS_KEY = "fittrack_sessions";
 const USER_ID = "default";
 
 const STREAK_MIGRATION_KEY = "fittrack_streak_migration_version";
-const STREAK_MIGRATION_VERSION = 4;
+const STREAK_MIGRATION_VERSION = 5;
+
 
 const MILESTONE_THRESHOLDS = [4, 8, 12, 16, 24, 36, 52];
 

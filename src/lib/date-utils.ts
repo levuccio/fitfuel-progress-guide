@@ -26,7 +26,8 @@ function weekIdToDate(weekId: string): Date {
   const year = parseInt(yearStr);
   const week = parseInt(weekStr);
   // ISO week 1 contains Jan 4th. We can find the Monday of week 1, then add (week-1) weeks.
-  const jan4 = new Date(year, 0, 4);
+  // Use UTC to avoid timezone shifts (Monday 00:00 -> Sunday 23:00)
+  const jan4 = new Date(Date.UTC(year, 0, 4));
   const startOfFirstISOWeek = startOfWeek(jan4, { weekStartsOn: 1 });
   return addWeeks(startOfFirstISOWeek, week - 1);
 }
