@@ -231,6 +231,7 @@ export function useStreakData() {
       for (const weekId of weeksToFinalize) {
         let summary = getWeekSummary(weekId) || initWeekSummary(weekId);
 
+        // If explicitly marking as ignored for rescue, or already finalized, skip
         if (summary.finalized) {
           current.lastFinalizedWeekId = weekId;
           continue;
@@ -243,14 +244,45 @@ export function useStreakData() {
         const qualifiedWeight3 = effectiveWeightsCount >= 3;
         const qualifiedAbs = effectiveAbsCount >= 1;
 
-        if (qualifiedWeight2) {
-          current.weight2Current += 1;
-        } else if (current.weight2SaveTokens > 0) {
-          current.weight2SaveTokens -= 1;
-          current.weight2Current += 1;
-          toast.info(`1 Weight 2x Streak Save Token used for week ${weekId}.`);
+        // CHECK FOR RESCUE OPPORTUNITIES
+        // Check Weights Rescue
+        if (!qualifiedWeight2) {
+          // Can we save this?
+          // 1. Do we have an Auto-Save token?
+          if (current.weight2SaveTokens > 0) {
+            current.weight2SaveTokens -= 1;
+            current.weight2Current += 1;
+            toast.info(`1 Weight 2x Streak Save Token used for week ${weekId}.`);
+            // Proceed to finalize as "saved"
+          } else {
+            // 2. Do we have a Manual Bonus Token (Carryover Credit) available?
+            // We need to check the BALANCE. We can't access derived 'weightBonusBalance' easily inside the reducer.
+            // However, strictly speaking, if we are here, we are about to RESET the streak.
+            // We should PAUSE finalization and return a "Rescue Pending" state.
+
+            // BUT: We need to know if we even HAVE credits.
+            // LIMITATION: 'weightBonusBalance' is derived from weekSummaries. 
+            // Accessing it inside setStreakState is tricky.
+            // WORKAROUND: We will pause and let the EFFECT outside handle the check.
+            // OR: We store 'rescuePending' in the state, and the UI decides if it's actionable.
+
+            // Let's check if we've already asked the user about this week
+            if (!current.rescueIgnoredWeeks?.includes(weekId)) {
+              // Pause everything!
+              return {
+                ...current,
+                rescueInProgress: {
+                  weekId,
+                  type: "weights",
+                }
+              };
+            }
+
+            // If we are here, rescue was ignored or not possible. Reset streak.
+            current.weight2Current = 0;
+          }
         } else {
-          current.weight2Current = 0;
+          current.weight2Current += 1;
         }
 
         if (qualifiedWeight3) {
@@ -270,9 +302,21 @@ export function useStreakData() {
           current.absCurrent += 1;
           toast.info(`1 Abs Streak Save Token used for week ${weekId}.`);
         } else {
+          // Check Abs Rescue
+          if (!current.rescueIgnoredWeeks?.includes(weekId)) {
+            // We only pause for Abs if checking weights didn't already pause it.
+            return {
+              ...current,
+              rescueInProgress: {
+                weekId,
+                type: "abs",
+              }
+            };
+          }
           current.absCurrent = 0;
         }
 
+        // Update Bests
         current.weight2Best = Math.max(current.weight2Best, current.weight2Current);
         current.weight3Best = Math.max(current.weight3Best, current.weight3Current);
         current.absBest = Math.max(current.absBest, current.absCurrent);
@@ -283,6 +327,8 @@ export function useStreakData() {
 
         current = awardMilestonesAndTokensIfNeeded(current);
         current.lastFinalizedWeekId = weekId;
+        // clear rescue state if we successfully moved past
+        current.rescueInProgress = undefined;
       }
 
       return current;
@@ -531,5 +577,40 @@ export function useStreakData() {
     weightBonusBalance,
     absBonusBalance,
     recalculateStreaksFromDeletion: () => { },
+
+    // Rescue Helpers
+    rescueInProgress: streakState.rescueInProgress,
+    performRescue: (weekId: string, type: "weights" | "abs") => {
+      // Apply a bonus token safely
+      // 1. Apply credit
+      weekSummariesRef.current; // access ref 
+      // Actually we can just call applyCarryoverCredit logic but targeting specific week
+      // Reuse applyCarryoverCredit logic but with forced weekId
+
+      const existing = weekSummaries.find((ws) => ws.weekId === weekId) || initWeekSummary(weekId);
+      const nextSummary: WeekSummary = {
+        ...existing,
+        weightsCarryoverApplied: type === "weights" ? (existing.weightsCarryoverApplied || 0) + 1 : existing.weightsCarryoverApplied || 0,
+        absCarryoverApplied: type === "abs" ? (existing.absCarryoverApplied || 0) + 1 : existing.absCarryoverApplied || 0,
+        updatedAt: new Date().toISOString(),
+        // Ensure it's NOT finalized so the loop re-processes it
+        finalized: false
+      };
+      updateWeekSummary(nextSummary);
+
+      // Clear rescue state so loop runs again
+      setStreakState(prev => ({
+        ...prev,
+        rescueInProgress: undefined
+      }));
+      toast.success("Streak Rescued!", { description: "Bonus token applied successfully." });
+    },
+    ignoreRescue: (weekId: string) => {
+      setStreakState(prev => ({
+        ...prev,
+        rescueInProgress: undefined,
+        rescueIgnoredWeeks: [...(prev.rescueIgnoredWeeks || []), weekId]
+      }));
+    }
   };
 }

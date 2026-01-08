@@ -112,4 +112,11 @@ export interface StreakState {
   weight2MilestoneAwarded: number; // last milestone (0,4,8...)
   weight3MilestoneAwarded: number;
   absMilestoneAwarded: number;
+
+  // New Rescue Fields
+  rescueInProgress?: {
+    weekId: string;
+    type: "weights" | "abs";
+  };
+  rescueIgnoredWeeks?: string[];
 }
