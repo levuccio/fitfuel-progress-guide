@@ -117,6 +117,7 @@ export interface StreakState {
   rescueInProgress?: {
     weekId: string;
     type: "weights" | "abs";
+    cost: number;
   };
   rescueIgnoredWeeks?: string[];
 }

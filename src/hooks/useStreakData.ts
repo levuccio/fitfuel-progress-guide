@@ -586,10 +586,17 @@ export function useStreakData() {
       // Reuse applyCarryoverCredit logic but with forced weekId
 
       const existing = weekSummaries.find((ws) => ws.weekId === weekId) || initWeekSummary(weekId);
+
+      const currentWeights = existing.weightsCount + (existing.weightsCarryoverApplied || 0);
+      const currentAbs = existing.absCount + (existing.absCarryoverApplied || 0);
+
+      const addWeights = type === "weights" ? Math.max(1, 2 - currentWeights) : 0;
+      const addAbs = type === "abs" ? Math.max(1, 1 - currentAbs) : 0;
+
       const nextSummary: WeekSummary = {
         ...existing,
-        weightsCarryoverApplied: type === "weights" ? (existing.weightsCarryoverApplied || 0) + 1 : existing.weightsCarryoverApplied || 0,
-        absCarryoverApplied: type === "abs" ? (existing.absCarryoverApplied || 0) + 1 : existing.absCarryoverApplied || 0,
+        weightsCarryoverApplied: (existing.weightsCarryoverApplied || 0) + addWeights,
+        absCarryoverApplied: (existing.absCarryoverApplied || 0) + addAbs,
         updatedAt: new Date().toISOString(),
         // Ensure it's NOT finalized so the loop re-processes it
         finalized: false

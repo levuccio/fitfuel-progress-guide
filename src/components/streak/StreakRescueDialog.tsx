@@ -9,11 +9,11 @@ export function StreakRescueDialog() {
 
     if (!rescue) return null;
 
-    const { weekId, type } = rescue;
+    const { weekId, type, cost = 1 } = rescue;
     const balance = type === "weights" ? weightBonusBalance : absBonusBalance;
 
     // Logic: Can user afford it?
-    const canAfford = balance >= 1;
+    const canAfford = balance >= cost;
 
     const handleRescue = () => {
         if (canAfford) {
@@ -42,11 +42,13 @@ export function StreakRescueDialog() {
 
                 <div className="py-4">
                     <p className="text-sm font-medium">
-                        Do you want to use <strong>1 Token</strong> retroactively to save your streak?
+                        You need <strong>{cost} Tokens</strong> to save this streak.
+                        <br />
+                        Do you want to use them retroactively?
                     </p>
                     {!canAfford && (
                         <p className="text-xs text-muted-foreground mt-2 text-red-500">
-                            (Check: You actually have {balance} tokens. If 0, sadly you cannot save this streak.)
+                            (You only have {balance}. You cannot save this streak.)
                         </p>
                     )}
                 </div>
@@ -60,7 +62,7 @@ export function StreakRescueDialog() {
                         onClick={handleRescue}
                         disabled={!canAfford}
                     >
-                        Yes, Rescue Streak (-1 Token)
+                        Yes, Rescue Streak (-{cost} Tokens)
                     </Button>
                 </DialogFooter>
             </DialogContent>
