@@ -268,12 +268,14 @@ export function useStreakData() {
 
             // Let's check if we've already asked the user about this week
             if (!current.rescueIgnoredWeeks?.includes(weekId)) {
+              const missing = Math.max(1, 2 - effectiveWeightsCount);
               // Pause everything!
               return {
                 ...current,
                 rescueInProgress: {
                   weekId,
                   type: "weights",
+                  cost: missing
                 }
               };
             }
@@ -310,6 +312,7 @@ export function useStreakData() {
               rescueInProgress: {
                 weekId,
                 type: "abs",
+                cost: 1
               }
             };
           }
