@@ -11,6 +11,7 @@ export default function DevToolsPage() {
         // 1. Get current state
         const weekSummaries = JSON.parse(localStorage.getItem("fittrack_week_summaries") || "[]");
         const streakState = JSON.parse(localStorage.getItem("fittrack_streak_state") || "{}");
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const sessions = JSON.parse(localStorage.getItem("fittrack_sessions") || "[]");
 
         // 2. Determine "Last Week"
@@ -76,8 +77,8 @@ export default function DevToolsPage() {
                 <CardHeader><CardTitle>Streak Testing</CardTitle></CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground mb-4">
-                        This will reset your Last Week's progress to 0, give you some bonus tokens, and rewinds the streak finalizer. 
-                On reload, the app should think you failed last week but have tokens -> <strong>Rescue Dialog should appear.</strong>
+                        This will reset your Last Week's progress to 0, give you some bonus tokens, and rewinds the streak finalizer.
+                        On reload, the app should think you failed last week but have tokens... <strong>Rescue Dialog should appear.</strong>
                     </p>
                     <Button onClick={simulateFailure} variant="destructive">
                         Simulate "Missed Week" Scenario
